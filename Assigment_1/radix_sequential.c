@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <math.h> 
+#include <math.h>
+#include <time.h>
 /* #define MAX_NUMBER 8 */ //Only for developing 
-#define NBITS sizeof(unsigned long long) * 8
+#define MAXNBITS sizeof(unsigned long long) * 8
 
 
 int check_number_of_elements(int number);
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) {
         numKeys = numKeys*2;
     }
 
-    printf("If there are %d bits there %llu possible numbers\n", number_of_bits, numKeys);
+    /* printf("If there are %d bits there %llu possible numbers\n", number_of_bits, numKeys); */
     unsigned long long* countKeys = malloc(numKeys * sizeof(unsigned long long));
     if(!countKeys){
         fprintf(stderr, "Memory allocation failed\n");
@@ -96,11 +97,12 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned int bits = (1U << number_of_bits) - 1;
-    /* char numberInBits[NBITS+1]="\0";
+    /* char numberInBits[MAXNBITS+1]="\0";
     getStringFromNumber(bits, numberInBits);
     printf("AUXILIAR VALUE FOR AND OPERATION %s\n", numberInBits); */
 
-
+    // Start timing
+    clock_t start = clock();
     for(int i=0; i<numIterations; i++){
        /*  printf("\nIteration %d\n", i); */
 
@@ -115,8 +117,8 @@ int main(int argc, char *argv[]) {
             aux2 = rawArray[j];
             aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this iteration
 
-            /* char numberInBits1[NBITS+1]="\0";
-            char numberInBits2[NBITS+1]="\0";
+            /* char numberInBits1[MAXNBITS+1]="\0";
+            char numberInBits2[MAXNBITS+1]="\0";
             getStringFromNumber(aux2, numberInBits1);
             getStringFromNumber(aux1, numberInBits2); 
             printf("\t-The number %llu: %s\n\thas a value of %llu\n", rawArray[j], numberInBits1, aux1); */
@@ -171,6 +173,8 @@ int main(int argc, char *argv[]) {
         }
         printf("\n"); */
     }
+    // End timing
+    clock_t end = clock();
 
     /* printf("Final Sorted Array: \n[");
     for(int j=0; j< number_of_elements-1; j++){
@@ -187,6 +191,10 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Success!, Array Sorted succesfully :)\n");
+     // Calculate the time elapsed
+    double time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+
+    printf("Time elapsed: %f seconds\n", time_elapsed);
 
     free(rawArray);
     free(outputArray);
@@ -239,16 +247,16 @@ int getNumberOfIterationsFromMax(unsigned long long maxNum, int numBits){
 int countBits(unsigned long long number) 
 {   
     int aux, currentBit;
-    char numberInBits[NBITS+1]="\0";
+    char numberInBits[MAXNBITS+1]="\0";
 
     /* printf("Loop:\t"); */
-    for (int i=0; i<NBITS; i++){
+    for (int i=0; i<MAXNBITS; i++){
         currentBit = number & 1;
         number >>= 1; //Shift the number 1 bit
         /* printf("%d", currentBit); */
         numberInBits[i]= '0'+currentBit;
     }
-    int i = NBITS-1;
+    int i = MAXNBITS-1;
     for(; i>=0; i--){
         if(numberInBits[i] == '1'){
             break;
@@ -264,7 +272,7 @@ int countBits(unsigned long long number)
 void getStringFromNumber(unsigned long long number, char * numberInBits){
     int aux, currentBit;
 
-    for (int i=0; i<NBITS; i++){
+    for (int i=0; i<MAXNBITS; i++){
         currentBit = number & 1;
         number >>= 1;
         numberInBits[i]= '0'+currentBit;
