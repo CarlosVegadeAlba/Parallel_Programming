@@ -1,6 +1,7 @@
 #include "mt19937-64.c"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <math.h>
 #include <time.h>
@@ -120,9 +121,12 @@ int main(int argc, char *argv[]) {
         }
 
         // update rawArray
-        for(j=0; j< number_of_elements; j++){
+        // CHANGE USE MEMCPY IS FASTER
+        /* for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
-        }
+        } */
+        memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
+
     }
     // End timing
     end = clock();

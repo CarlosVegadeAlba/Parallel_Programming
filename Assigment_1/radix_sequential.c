@@ -1,6 +1,7 @@
 #include "mt19937-64.c"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <math.h>
 #include <time.h>
@@ -94,9 +95,12 @@ int main(int argc, char *argv[]) {
     for(i=0; i<numIterations; i++){
 
         // Reset the key array
-        for(j=0; j<numKeys; j++){
+        /* for(j=0; j<numKeys; j++){
             countKeys[j]=0;
-        }
+        } */
+        // Faster
+        memset(countKeys, 0, numKeys * sizeof(unsigned long long));
+
 
         // Fill the key array
         for(j=0; j<number_of_elements; j++){
@@ -120,10 +124,10 @@ int main(int argc, char *argv[]) {
         }
 
         // update rawArray
-        // CHANGE USE MEMCPY IS FASTER
         /* for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
         } */
+        // Faster
         memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
 
     }

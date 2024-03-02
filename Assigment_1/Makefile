@@ -14,6 +14,10 @@ radix_parallel: radix_parallel.o
 	gcc -o radix_parallel radix_parallel.o
 RadixParallel=radix_parallel.o radix_parallel
 
+# Redo
+redo:
+	rm radix_parallel.c radix_sequential.c
+	touch radix_parallel.c radix_sequential.c
 
 # All
 all: $(RadixSequential) $(RadixParallel)
