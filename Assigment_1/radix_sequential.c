@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
 
     unsigned long long* rawArray = malloc(number_of_elements * sizeof(unsigned long long));
     unsigned long long* outputArray = malloc(number_of_elements * sizeof(unsigned long long));
+    unsigned long long* countKeys;
 
     if (!rawArray || !outputArray) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -52,14 +53,17 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned long long randomNum=0, maxNum=0, aux1=0, aux2=0, numKeys=1;
-    int numIterations;
+    unsigned int bits;
+    int numIterations, i, j, randomValue;
+    double time_elapsed;
+    clock_t start, end;
 
     // Random seed
     srand((unsigned) time(NULL));
-    int randomValue = rand();
+    randomValue = rand();
     init_genrand64(randomValue);
     
-    for (int i=0; i<number_of_elements-1; i++){
+    for (i=0; i<number_of_elements-1; i++){
         randomNum = genrand64_int64(); 
         rawArray[i] = randomNum;
     }
@@ -68,14 +72,13 @@ int main(int argc, char *argv[]) {
 
     // Get the max number
     maxNum = max(rawArray, number_of_elements);
-    
     numIterations = getNumberOfIterationsFromMax(maxNum, number_of_bits);
     
-    for(int i=1; i<=number_of_bits; i++){
+    for(i=1; i<=number_of_bits; i++){
         numKeys = numKeys*2;
     }
 
-    unsigned long long* countKeys = malloc(numKeys * sizeof(unsigned long long));
+    countKeys = malloc(numKeys * sizeof(unsigned long long));
     if(!countKeys){
         fprintf(stderr, "Memory allocation failed\n");
         free(rawArray);
@@ -84,31 +87,31 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    unsigned int bits = (1U << number_of_bits) - 1;
+    bits = (1U << number_of_bits) - 1;
 
     // Start timing
-    clock_t start = clock();
-    for(int i=0; i<numIterations; i++){
+    start = clock();
+    for(i=0; i<numIterations; i++){
 
         // Reset the key array
-        for(int j=0; j<numKeys; j++){
+        for(j=0; j<numKeys; j++){
             countKeys[j]=0;
         }
 
         // Fill the key array
-        for(int j=0; j<number_of_elements; j++){
+        for(j=0; j<number_of_elements; j++){
             aux2 = rawArray[j];
             aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this iteration
             countKeys[aux1]++;
         }
 
         // Do cumulative sum
-        for(int j=1; j<numKeys; j++){
+        for(j=1; j<numKeys; j++){
             countKeys[j]= countKeys[j-1] + countKeys[j];
         }
 
         // Fill the output array
-        for(int j=number_of_elements-1; j>=0; j--){
+        for(j=number_of_elements-1; j>=0; j--){
             aux2 = rawArray[j];
             aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this 
             countKeys[aux1]--;
@@ -117,15 +120,18 @@ int main(int argc, char *argv[]) {
         }
 
         // update rawArray
-        for(int j=0; j< number_of_elements; j++){
+        // CHANGE USE MEMCPY IS FASTER
+        /* for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
-        }
+        } */
+        memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
+
     }
     // End timing
-    clock_t end = clock();
+    end = clock();
 
     // Check if the array is sorted well
-    for(int j=0; j< number_of_elements-1; j++){
+    for(j=0; j< number_of_elements-1; j++){
         if(rawArray[j] > rawArray[j+1]){
             printf("ERROR, the array is not well sorted\n");
             break;
@@ -134,7 +140,7 @@ int main(int argc, char *argv[]) {
 
     printf("Success!, Array Sorted succesfully :)\n");
      // Calculate the time elapsed
-    double time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+    time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
     printf("Time elapsed: %f seconds\n", time_elapsed);
 
@@ -150,6 +156,7 @@ int main(int argc, char *argv[]) {
 */
 unsigned long long max(unsigned long long *list, int lenght){
     unsigned long long maximum;
+    int i;
     
     if (list == NULL || lenght<=0){
         return 0;
@@ -157,7 +164,7 @@ unsigned long long max(unsigned long long *list, int lenght){
 
     maximum = list[0];
 
-    for (int i=0; i<lenght; i++){
+    for (i=0; i<lenght; i++){
         if (maximum<list[i]) maximum=list[i];
     }
     return maximum;
@@ -186,15 +193,16 @@ int getNumberOfIterationsFromMax(unsigned long long maxNum, int numBits){
 */
 int countBits(unsigned long long number) 
 {   
-    int aux, currentBit;
+    int currentBit, i;
     char numberInBits[MAXNBITS+1]="\0";
 
-    for (int i=0; i<MAXNBITS; i++){
+    for (i=0; i<MAXNBITS; i++){
         currentBit = number & 1;
         number >>= 1; //Shift the number 1 bit
         numberInBits[i]= '0'+currentBit;
     }
-    int i = MAXNBITS-1;
+
+    i = MAXNBITS-1;
     for(; i>=0; i--){
         if(numberInBits[i] == '1'){
             break;
@@ -206,12 +214,11 @@ int countBits(unsigned long long number)
 
 
 void getStringFromNumber(unsigned long long number, char * numberInBits){
-    int aux, currentBit;
+    int currentBit, i;
 
-    for (int i=0; i<MAXNBITS; i++){
+    for (i=0; i<MAXNBITS; i++){
         currentBit = number & 1;
         number >>= 1;
         numberInBits[i]= '0'+currentBit;
     }
-
 }
