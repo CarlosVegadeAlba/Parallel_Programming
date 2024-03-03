@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     unsigned int bits;
     int numIterations, i, j, randomValue;
     double time_elapsed;
-    clock_t start, end;
+    double start, end;
 
     // Random seed
     srand((unsigned) time(NULL));
@@ -103,20 +103,19 @@ int main(int argc, char *argv[]) {
     bits = (1U << number_of_bits) - 1;
 
     // Start timing
-    start = clock();
+    start = omp_get_wtime();
     for(i=0; i<numIterations; i++){
 
         // Lets see
         for(j=0; j<numKeys; j++){
             countKeys[j]=0;
         }
-        //memset(countKeys, 0, numKeys * sizeof(unsigned long long));
         
         // Fill the key array
         // PARALELISE 1 - count phase
         for(j=0; j<number_of_elements; j++){
-            aux2 = rawArray[j];
-            aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this iteration
+            unsigned long long aux2 = rawArray[j];
+            unsigned int aux1 = (aux2 >> (i*number_of_bits)) & bits;
             countKeys[aux1]++;
         }
 
@@ -139,16 +138,15 @@ int main(int argc, char *argv[]) {
         }
 
         // Lets see
+        #pragma omp for
         for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
         }
-        //memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
     }
-    
-        
+
     
     // End timing
-    end = clock();
+    end = omp_get_wtime();
 
     // Check if the array is sorted well
     for(j=0; j< number_of_elements-1; j++){
@@ -163,7 +161,7 @@ int main(int argc, char *argv[]) {
 
     printf("Success!, Array Sorted succesfully :)\n");
      // Calculate the time elapsed
-    time_elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+    time_elapsed = end - start;
 
     printf("Time elapsed: %f seconds\n", time_elapsed);
 

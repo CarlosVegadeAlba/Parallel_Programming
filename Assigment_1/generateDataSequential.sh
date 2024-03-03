@@ -9,7 +9,7 @@ touch data/radix_sequential.txt
 
 # Start and end values
 start=100000
-end=4000000
+end=40000000
 strForDecimals="0"
 
 # Current value of x
