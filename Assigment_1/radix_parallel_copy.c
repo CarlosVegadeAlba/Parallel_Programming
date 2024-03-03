@@ -42,16 +42,6 @@ int main(int argc, char *argv[]) {
     }
 
     int number_of_threads = atoi(argv[3]);
-    if (number_of_threads<1){
-        printf("\tERROR, the minimum number of threads is 1\n");
-        return -1;
-    }
-    if (number_of_threads>80){
-        printf("\tERROR, the maximum number of threads is 80\n");
-        return -1;
-    }
-    omp_set_num_threads(number_of_threads);
-
     printf("Radix Parallel Sorting with %d elements, %d bits, %d threads\n", number_of_elements, number_of_bits, number_of_threads);
 
     unsigned long long* rawArray = malloc(number_of_elements * sizeof(unsigned long long));
@@ -104,49 +94,87 @@ int main(int argc, char *argv[]) {
 
     // Start timing
     start = clock();
-    for(i=0; i<numIterations; i++){
+    #pragma omp parallel num_threads(number_of_threads)
+    {
+        for(i=0; i<numIterations; i++){
+            // Memset should be only done by one thread
+            
+            #pragma omp single
+            {
+                int thread_id = omp_get_thread_num();
+                printf("Allocating... Hello 1 from thread %d\n", thread_id);
+                fflush(stdout);
+                // Lets see
+                for(j=0; j<numKeys; j++){
+                    countKeys[j]=0;
+                }
+                // memset(countKeys, 0, numKeys * sizeof(unsigned long long));
+            }
+            #pragma omp barrier
+           
+            // Fill the key array
+            // PARALELISE 1 - count phase
+            #pragma omp for
+            for(j=0; j<number_of_elements; j++){
+                int thread_id = omp_get_thread_num();
+                printf("\tCounting... Hello 2 from thread %d\n", thread_id);
+                fflush(stdout);
+                aux2 = rawArray[j];
+                aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this iteration
+                // Protect the value 
+                #pragma omp atomic 
+                countKeys[aux1]++;
+            }
 
-        // Lets see
-        for(j=0; j<numKeys; j++){
-            countKeys[j]=0;
-        }
-        //memset(countKeys, 0, numKeys * sizeof(unsigned long long));
-        
-        // Fill the key array
-        // PARALELISE 1 - count phase
-        for(j=0; j<number_of_elements; j++){
-            aux2 = rawArray[j];
-            aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this iteration
-            countKeys[aux1]++;
-        }
+            // Do cumulative sum
+            // PARALELISE 2 -Possible paralelise 2 (more challenging)
+            #pragma omp single
+            {
+                int thread_id = omp_get_thread_num();
+                printf("Sum... Hello 3 from thread %d\n", thread_id);
+                fflush(stdout);
+                for(j=1; j<numKeys; j++){
+                    countKeys[j]= countKeys[j-1] + countKeys[j];
+                }
+            }
 
-        // Do cumulative sum
-        // PARALELISE 2 -Possible paralelise 2 (more challenging)
+            // Fill the output array
+            // PARALELISE 3 - Order the elements
+            #pragma omp for private(index)
+            for(j=number_of_elements-1; j>=0; j--){
+                int thread_id = omp_get_thread_num();
+                printf("\tFillOutputArray... Hello 4 from thread %d\n", thread_id);
+                fflush(stdout);
+                aux2 = rawArray[j];
+                aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this 
 
-        for(j=1; j<numKeys; j++){
-            countKeys[j]= countKeys[j-1] + countKeys[j];
-        }
+                // Protect the value 
+                #pragma omp atomic capture
+                {
+                    index = countKeys[aux1];
+                    countKeys[aux1]--;
+                }
+                outputArray[index] = rawArray[j];
+                
+            }
 
-        // Fill the output array
-        // PARALELISE 3 - Order the elements
-        //#pragma omp parallel for
-        for(j=number_of_elements-1; j>=0; j--){
-            aux2 = rawArray[j];
-            aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this 
-            index = countKeys[aux1];
-            countKeys[aux1]--;
-            outputArray[index-1] = rawArray[j];
-        }
+            // Faster than a loop to copy
+            // This operation can be done by one thread and then another thread
+            // can start reseting the countKeys at the same time
+            #pragma omp single
+            {
+                int thread_id = omp_get_thread_num();
+                printf("MemCopy... Hello 5 from thread %d\n", thread_id);
+                fflush(stdout);
+                // Lets see
+                for(j=0; j< number_of_elements; j++){
+                    rawArray[j] = outputArray[j];
+                }
+                //memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
+            }
 
-        // Lets see
-        for(j=0; j< number_of_elements; j++){
-            rawArray[j] = outputArray[j];
         }
-        //memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
     }
-    
-        
-    
     // End timing
     end = clock();
 
@@ -154,10 +182,7 @@ int main(int argc, char *argv[]) {
     for(j=0; j< number_of_elements-1; j++){
         if(rawArray[j] > rawArray[j+1]){
             printf("ERROR, the array is not well sorted\n");
-            free(rawArray);
-            free(outputArray);
-            free(countKeys);
-            return -1;
+            break;
         }
     }
 

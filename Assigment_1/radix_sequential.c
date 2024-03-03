@@ -94,13 +94,8 @@ int main(int argc, char *argv[]) {
     start = clock();
     for(i=0; i<numIterations; i++){
 
-        // Reset the key array
-        /* for(j=0; j<numKeys; j++){
-            countKeys[j]=0;
-        } */
-        // Faster
+        // Faster than a loop to fill
         memset(countKeys, 0, numKeys * sizeof(unsigned long long));
-
 
         // Fill the key array
         for(j=0; j<number_of_elements; j++){
@@ -123,11 +118,7 @@ int main(int argc, char *argv[]) {
             
         }
 
-        // update rawArray
-        /* for(j=0; j< number_of_elements; j++){
-            rawArray[j] = outputArray[j];
-        } */
-        // Faster
+        // Faster than a loop to copy
         memcpy(rawArray, outputArray, number_of_elements * sizeof(unsigned long long));
 
     }
@@ -138,7 +129,10 @@ int main(int argc, char *argv[]) {
     for(j=0; j< number_of_elements-1; j++){
         if(rawArray[j] > rawArray[j+1]){
             printf("ERROR, the array is not well sorted\n");
-            break;
+            free(rawArray);
+            free(outputArray);
+            free(countKeys);
+            return -1;
         }
     }
 
