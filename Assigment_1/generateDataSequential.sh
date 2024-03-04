@@ -46,7 +46,13 @@ while [ $(echo "$current <= $end" | bc) -eq 1 ]; do
     echo "  Average for x=$current is $average"
 
     # Append the size of x and the average runtime to the file
-    echo "$current $average" >> "$output_file"
+    xValue=$(echo "scale=6; $current / 1000000" | bc) # Save the x as millions for making easier to plot
+    # For printing the numbers less than 1 as 0.5 not like .5
+    if [ "$(echo "$xValue < 1" | bc)" -eq 1 ]; then
+        xValue="0${xValue}"
+    fi
+
+    echo "$xValue $average" >> "$output_file"
 
     # Increment x exponentially by a factor of 1.2
     current=$(echo "$current * 1.2" | bc)
@@ -70,6 +76,10 @@ if [ "$(echo "$average < 1" | bc)" -eq 1 ]; then
 fi
 echo "  Average for x=$current is $average"
 
-echo "$current $average" >> "$output_file"
+xValue=$(echo "scale=6; $current / 1000000" | bc)
+if [ "$(echo "$xValue < 1" | bc)" -eq 1 ]; then
+    xValue="0${xValue}"
+fi
+echo "$xValue $average" >> "$output_file"
 
 

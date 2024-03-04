@@ -8,12 +8,9 @@ touch data/radix_parallel.txt
 > "$output_file"
 
 # Start and end values
-start=1000000
+start=100000
 end=40000000
-threads=(2 8 16 24 32 50 80)
-bits=8
 strForDecimals="0"
-n=5 #number of times for average
 
 # Current value of x
 current=$start
@@ -25,125 +22,64 @@ extract_time() {
 
 # Loop until current is less than or equal to end
 while [ $(echo "$current <= $end" | bc) -eq 1 ]; do
-
-    # Run the program for each thread n times for the current x
-    echo "Running x=$current"
-    # Append the size of x and the average runtime to the file
-    currentLine=""
-    currentLine+=$(echo "scale=6; $current / 1000000" | bc) # Save the x as millions for making easier to plot
-    currentLine+=" "
-
-    # First run the sequential algorithm
+    # Sum of all runs for the current x
     sum=0
-    for ((i=1; i<=n; i++)); do
+
+    # Run the program 10 times for the current x
+    echo "Running x=$current"
+    for i in {1..10}; do
         # Execute the program and capture the output
         # Assuming the program's output is the runtime in a format that can be summed
-        output=$(./radix_sequential $current $bits)
+        output=$(./radix_parallel $current 16 16)
         time_elapsed=$(extract_time "$output")
         # Add the output to sum
         sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
-        # Calculate the average for the current x
     done
-    average=$(echo "scale=6; $sum / $n" | bc)
+
+    # Calculate the average for the current x
+    average=$(echo "scale=6; $sum / 10" | bc)
 
     # For printing the numbers less than 1 as 0.5 not like .5
     if [ "$(echo "$average < 1" | bc)" -eq 1 ]; then
         average="0${average}"
     fi
-    echo "  Average for x=$current and threads=Sequential is $average"
+    echo "  Average for x=$current is $average"
 
     # Append the size of x and the average runtime to the file
-    currentLine+="$average "
-    
-    for thread in "${threads[@]}"
-    do
-        echo " Threads: $thread"
-        # Sum of all runs for the current x
-        sum=0
-        for ((i=1; i<=n; i++)); do
-            # Execute the program and capture the output
-            # Assuming the program's output is the runtime in a format that can be summed
-            output=$(./radix_parallel $current $bits $thread)
-            time_elapsed=$(extract_time "$output")
-            # Add the output to sum
-            sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
-            # Calculate the average for the current x
-        done
-        average=$(echo "scale=6; $sum / $n" | bc)
+    xValue=$(echo "scale=6; $current / 1000000" | bc) # Save the x as millions for making easier to plot
+    # For printing the numbers less than 1 as 0.5 not like .5
+    if [ "$(echo "$xValue < 1" | bc)" -eq 1 ]; then
+        xValue="0${xValue}"
+    fi
 
-        # For printing the numbers less than 1 as 0.5 not like .5
-        if [ "$(echo "$average < 1" | bc)" -eq 1 ]; then
-            average="0${average}"
-        fi
-        echo "  Average for x=$current and thread=$thread is $average"
+    echo "$xValue $average" >> "$output_file"
 
-        # Append the size of x and the average runtime to the file
-        currentLine+="$average "
-
-    done
-    echo "$currentLine" >> "$output_file"
     # Increment x exponentially by a factor of 1.2
     current=$(echo "$current * 1.2" | bc)
-
 done
 
 #Once the number is bigger than 40 million just do one more time for 40 million
 
 current=$end
-echo "Running x=$current"
-# Append the size of x and the average runtime to the file
-currentLine=""
-currentLine+=$(echo "scale=6; $current / 1000000" | bc)
-currentLine+=" "
-
-# First run the sequential algorithm
 sum=0
-for ((i=1; i<=n; i++)); do
-    # Execute the program and capture the output
-    # Assuming the program's output is the runtime in a format that can be summed
-    output=$(./radix_sequential $current $bits)
+echo "Running x=$current"
+for i in {1..10}; do
+    output=$(./radix_parallel $current 16 16)
     time_elapsed=$(extract_time "$output")
-    # Add the output to sum
     sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
-    # Calculate the average for the current x
 done
-average=$(echo "scale=6; $sum / $n" | bc)
 
-# For printing the numbers less than 1 as 0.5 not like .5
+average=$(echo "scale=6; $sum / 10" | bc)
+
 if [ "$(echo "$average < 1" | bc)" -eq 1 ]; then
     average="0${average}"
 fi
-echo "  Average for x=$current and threads=Sequential is $average"
+echo "  Average for x=$current is $average"
 
-# Append the size of x and the average runtime to the file
-currentLine+="$average "
-
-for thread in "${threads[@]}"
-do
-    echo " Threads: $thread"
-    # Sum of all runs for the current x
-    sum=0
-    for ((i=1; i<=n; i++)); do
-        # Execute the program and capture the output
-        # Assuming the program's output is the runtime in a format that can be summed
-        output=$(./radix_parallel $current $bits $thread)
-        time_elapsed=$(extract_time "$output")
-        # Add the output to sum
-        sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
-        # Calculate the average for the current x
-    done
-    average=$(echo "scale=6; $sum / $n" | bc)
-
-    # For printing the numbers less than 1 as 0.5 not like .5
-    if [ "$(echo "$average < 1" | bc)" -eq 1 ]; then
-        average="0${average}"
-    fi
-    echo "  Average for x=$current and thread=$thread is $average"
-
-    # Append the size of x and the average runtime to the file
-    currentLine+="$average "
-
-done
-echo "$currentLine" >> "$output_file"
+xValue=$(echo "scale=6; $current / 1000000" | bc)
+if [ "$(echo "$xValue < 1" | bc)" -eq 1 ]; then
+    xValue="0${xValue}"
+fi
+echo "$xValue $average" >> "$output_file"
 
 

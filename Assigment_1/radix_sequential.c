@@ -23,11 +23,13 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Convertir los argumentos de entrada de string a int
-    int number_of_elements = atoi(argv[1]);
-    if (number_of_elements<2){
-        printf("\tERROR, the array needs to have at least 2 elements\n");
-        return -1;
+    char *endptr;
+    unsigned long long number_of_elements = strtoull(argv[1], &endptr, 10);
+
+    // Check if the coversion was done successfully
+    if (endptr == argv[1]) {
+        printf("La conversión falló. Asegúrate de que ingresaste un número válido.\n");
+        return 1;
     }
 
     int number_of_bits = atoi(argv[2]);
@@ -40,7 +42,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    printf("Radix Sequential Sorting with %d elements and %d bits\n", number_of_elements, number_of_bits);
+    printf("Radix Sequential Sorting with %llu elements and %d bits\n", number_of_elements, number_of_bits);
 
     unsigned long long* rawArray = malloc(number_of_elements * sizeof(unsigned long long));
     unsigned long long* outputArray = malloc(number_of_elements * sizeof(unsigned long long));

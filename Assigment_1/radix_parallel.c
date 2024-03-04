@@ -24,11 +24,13 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Convertir los argumentos de entrada de string a int
-    int number_of_elements = atoi(argv[1]);
-    if (number_of_elements<2){
-        printf("\tERROR, the array needs to have at least 2 elements\n");
-        return -1;
+    char *endptr;
+    unsigned long long number_of_elements = strtoull(argv[1], &endptr, 10);
+
+    // Check if the coversion was done successfully
+    if (endptr == argv[1]) {
+        printf("La conversión falló. Asegúrate de que ingresaste un número válido.\n");
+        return 1;
     }
 
     int number_of_bits = atoi(argv[2]);
@@ -52,7 +54,7 @@ int main(int argc, char *argv[]) {
     }
     omp_set_num_threads(number_of_threads);
 
-    printf("Radix Parallel Sorting with %d elements, %d bits, %d threads\n", number_of_elements, number_of_bits, number_of_threads);
+    printf("Radix Parallel Sorting with %llu elements, %d bits, %d threads\n", number_of_elements, number_of_bits, number_of_threads);
 
     unsigned long long* rawArray = malloc(number_of_elements * sizeof(unsigned long long));
     unsigned long long* outputArray = malloc(number_of_elements * sizeof(unsigned long long));
@@ -121,7 +123,6 @@ int main(int argc, char *argv[]) {
 
         // Do cumulative sum
         // PARALELISE 2 -Possible paralelise 2 (more challenging)
-
         for(j=1; j<numKeys; j++){
             countKeys[j]= countKeys[j-1] + countKeys[j];
         }
@@ -137,7 +138,6 @@ int main(int argc, char *argv[]) {
             outputArray[index-1] = rawArray[j];
         }
 
-        // Lets see
         #pragma omp for
         for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
