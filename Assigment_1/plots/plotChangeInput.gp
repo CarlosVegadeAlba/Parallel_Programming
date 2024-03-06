@@ -1,3 +1,5 @@
+cd ".."
+
 set terminal png
 set output 'plots/radix_parallel_changeInput.png'
 

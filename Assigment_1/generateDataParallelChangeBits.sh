@@ -9,10 +9,10 @@ touch data/radix_parallelChangeBits.txt
 
 # Start and end values
 
-threads=(8 16 32)
-bits=(2 8 16)
+threads=(4 8 12 16 24 32)
+bits=(18)
 strForDecimals="0"
-n=20 #number of times for average
+n=10 #number of times for average
 x=10000000
 
 
@@ -51,7 +51,7 @@ do
         echo " $thread threads running"
         sum=0
         for ((i=1; i<=n; i++)); do
-            output=$(./radix_parallel $x $bit $thread)
+            output=$(./radix_parallel3 $x $bit $thread)
             time_elapsed=$(extract_time "$output")
             sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
         done
@@ -69,6 +69,7 @@ do
     done
     echo "$currentLine" >> "$output_file"
 done
+
 
 
 

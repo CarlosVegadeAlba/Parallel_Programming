@@ -1,3 +1,8 @@
+cd ".."
+
+# Set the filename of the data
+dataFilemane="data/radix_sequential_b=16.txt"
+
 set terminal png
 set output 'plots/radix_sequential_Formula.png'
 
@@ -11,6 +16,6 @@ set style data linespoints
 
 f(x) = a * x * log(x) + b
 
-fit f(x) 'data/radix_sequential.txt' using 1:2 via a, b
+fit f(x) dataFilemane using 1:2 via a, b
 
-plot 'data/radix_sequential.txt' using 1:2 title "Sequential" with lines, f(x) title "n log n" with lines
+plot dataFilemane using 1:2 title "Sequential b=16" with lines, f(x) title "n log n" with lines

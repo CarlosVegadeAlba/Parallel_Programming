@@ -25,10 +25,9 @@ int main(int argc, char *argv[]) {
     }
 
     char *endptr;
-    // Convertir los argumentos de entrada de string a int
     unsigned long long number_of_elements = strtoull(argv[1], &endptr, 10);
 
-    // Verificar si la conversión fue exitosa
+    // Check if the coversion was done successfully
     if (endptr == argv[1]) {
         printf("La conversión falló. Asegúrate de que ingresaste un número válido.\n");
         return 1;
@@ -59,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     unsigned long long* rawArray = malloc(number_of_elements * sizeof(unsigned long long));
     unsigned long long* outputArray = malloc(number_of_elements * sizeof(unsigned long long));
-    unsigned long long* countKeys;
+    unsigned long long** countKeys;
 
     if (!rawArray || !outputArray) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -94,7 +93,8 @@ int main(int argc, char *argv[]) {
         numKeys = numKeys*2;
     }
 
-    countKeys = malloc(numKeys * sizeof(unsigned long long));
+    // A Key array per iteration
+    countKeys = (unsigned long long**)malloc(numIterations * sizeof(unsigned long long));
     if(!countKeys){
         fprintf(stderr, "Memory allocation failed\n");
         free(rawArray);
@@ -103,48 +103,58 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Alloc for each iteration
+    for(i=0; i<numIterations; i++){
+        countKeys[i] = (unsigned long long*)calloc(numKeys, sizeof(unsigned long long));
+        if (!countKeys[i]){
+            free(rawArray);
+            free(outputArray);
+            for(j=0; j<i; j++){
+                free(countKeys[j]);
+            }
+            free(countKeys);
+            return -1;
+        }
+    }
+
     bits = (1U << number_of_bits) - 1;
 
     // Start timing
     start = omp_get_wtime();
+    #pragma omp parallel for
     for(i=0; i<numIterations; i++){
-
-        // Lets see
-        for(j=0; j<numKeys; j++){
-            countKeys[j]=0;
-        }
-        
-        // Fill the key array
-        // PARALELISE 1 - count phase
         for(j=0; j<number_of_elements; j++){
             unsigned long long aux2 = rawArray[j];
             unsigned int aux1 = (aux2 >> (i*number_of_bits)) & bits;
-            countKeys[aux1]++;
+            countKeys[i][aux1]++;
         }
 
         // Do cumulative sum
         // PARALELISE 2 -Possible paralelise 2 (more challenging)
         for(j=1; j<numKeys; j++){
-            countKeys[j]= countKeys[j-1] + countKeys[j];
+            countKeys[i][j]= countKeys[i][j-1] + countKeys[i][j];
         }
 
-        // Fill the output array
+    }
+    
+
+    for(i=0; i<numIterations; i++){
+    // Fill the output array
         // PARALELISE 3 - Order the elements
         //#pragma omp parallel for
         for(j=number_of_elements-1; j>=0; j--){
             aux2 = rawArray[j];
             aux1 = (aux2 >> (i*number_of_bits)) & bits; //aux1 has the bits we are studing in this 
-            index = countKeys[aux1];
-            countKeys[aux1]--;
+            index = countKeys[i][aux1];
+            countKeys[i][aux1]--;
             outputArray[index-1] = rawArray[j];
         }
 
-        #pragma omp for
+        #pragma omp parallel for
         for(j=0; j< number_of_elements; j++){
             rawArray[j] = outputArray[j];
         }
     }
-
     
     // End timing
     end = omp_get_wtime();
@@ -168,6 +178,9 @@ int main(int argc, char *argv[]) {
 
     free(rawArray);
     free(outputArray);
+    for(j=0; j<numIterations; j++){
+        free(countKeys[j]);
+    }
     free(countKeys);
     return 0;
 }

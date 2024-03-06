@@ -3,7 +3,7 @@
 start=1000000
 increment=1500000
 end=43000000
-bits=8
+bits=16
 strForDecimals="0"
 
 filename="data/radix_sequential_b=${bits}.txt"

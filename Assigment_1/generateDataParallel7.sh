@@ -1,16 +1,21 @@
 #!/bin/bash
 
+# Start and end values
 start=1000000
 increment=1500000
 end=43000000
-bits=8
+threads=16
+bits=4
 strForDecimals="0"
 
-filename="data/radix_sequential_b=${bits}.txt"
+programToRun="./radix_parallel3"
+filename="data/radix_parallel3(NewDobleParallelize)t=${threads}_b=${bits}.txt"
 output_file=$filename
 touch $filename
 # Ensure the output file is empty at the start
 > "$output_file"
+
+
 # Current value of x
 current=$start
 
@@ -29,7 +34,7 @@ while [ $(echo "$current <= $end" | bc) -eq 1 ]; do
     for i in {1..10}; do
         # Execute the program and capture the output
         # Assuming the program's output is the runtime in a format that can be summed
-        output=$(./radix_sequential $current $bits)
+        output=$($programToRun $current $bits $threads)
         time_elapsed=$(extract_time "$output")
         # Add the output to sum
         sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
@@ -65,7 +70,7 @@ current=$end
 sum=0
 echo "Running x=$current"
 for i in {1..10}; do
-    output=$(./radix_sequential $current 8)
+    output=$(./radix_parallel $current 16 16)
     time_elapsed=$(extract_time "$output")
     sum=$(echo "scale=6; $sum + $time_elapsed" | bc)
 done
@@ -82,6 +87,4 @@ if [ "$(echo "$xValue < 1" | bc)" -eq 1 ]; then
     xValue="0${xValue}"
 fi
 echo "$xValue $average" >> "$output_file"
-
 '
-

@@ -2,8 +2,9 @@
 
 # Initial parameters
 x=100000
-y=16
+y=8
 factor=2 # Exponential growth factor for initial phase
+
 
 # Function to extract the time from the output
 extract_time() {
@@ -40,3 +41,4 @@ while [ $(echo "$time_elapsed < 10" | bc) -eq 1 ]; do
 done
 
 echo "Final configuration reached with x=$x, y=$y, and time elapsed: $time_elapsed seconds."
+
