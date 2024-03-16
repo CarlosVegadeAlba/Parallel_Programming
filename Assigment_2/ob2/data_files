@@ -1,10 +1,14 @@
-4
 1
-6 1 10 20 30 40 50 
+1
+1 2 
+/export/data/siv35/caveg9815/Assigment_2/ob2/tests/mytest0.mtx
+
+/export/data/fredrikm/inf236/smallGraphs/test.mtx
 /export/data/fredrikm/inf236/smallGraphs/test1.mtx
 /export/data/fredrikm/inf236/smallGraphs/test2.mtx
 /export/data/fredrikm/inf236/smallGraphs/test3.mtx
-/export/data/fredrikm/inf236/smallGraphs/test.mtx
+
+
 
 /export/data/fredrikm/inf236/graphs/road_usa.mtx
 /export/data/fredrikm/inf236/graphs/delaunay_n24.mtx  
