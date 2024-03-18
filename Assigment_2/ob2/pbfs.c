@@ -24,7 +24,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     int i,j;          // Loop indices
     int v,w;          // Pointers to vertices
-    int num_r,num_w;  // Number of vertices in S and T, respectively
     int *temp;        // Temporary pointer
     int deep;
     deep=0;
@@ -32,7 +31,7 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     int local_counter=0;
     int *local_T;
 
-    local_T = (int*) malloc(n * sizeof(int));
+    local_T = (int *) malloc(sizeof(int)*(n+2));
     if(!local_T){
         printf("Error allocating\n");
         return;

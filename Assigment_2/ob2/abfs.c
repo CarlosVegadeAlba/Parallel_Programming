@@ -29,19 +29,20 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     int i,j,k;         // Loop indices
     int v,w;          // Pointers to vertices
-    int num_r,num_w;  // Number of vertices in S and T, respectively
+    
     int *temp;        // Temporary pointer
     int deep;
     deep=0;
     int sequentialRounds=0; // Rounds before parallel
-    int rounds_k=1;                // Rounds before copying to S  
+    int rounds_k=4;         // Rounds before copying to S  
+    int limit_sequential=0;
 
     int local_counter=0;
     int *local_T;
     int current_counter=0;
     int newVertexs_counter=0;
 
-    local_T = (int*) malloc(n * sizeof(int));
+    local_T = (int *) malloc(sizeof(int)*(n+2));
     if(!local_T){
         printf("Error allocating\n");
         return;
@@ -55,33 +56,72 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     T[thread_id+offset] = 0;      // Number of vertices in T for this thread
 
+
+    // FIRST SEQUENTIAL
     #pragma omp single
         {
 
     for(i=1;i<=n;i++) {     // Set that every node is unvisited
         p[i] = -1;          // Using -1 to mark that a vertex is unvisited
         dist[i] = -1;
-
-
-        T[0] = 1; // Num Vertexs of this round
-        T[1] = 0; // Num Vertexs of the next round
-        S[0] = 1; // Vertexs of this round
-        p[1] = 1;        // Set the parent of starting vertex to itself
-        dist[1] = 0;     // Set the distance from the starting vertex to itself
     }
 
+    local_T[0] = 1;        // Vertexs of this round
+    p[1] = 1;        // Set the parent of starting vertex to itself
+    dist[1] = 0;     // Set the distance from the starting vertex to itself
+    T[0] = 1; // Num Vertexs of this round
+    S[0] = 1; // Vertexs of this round
+
+    
+    /* local_counter=0;       // Amount of vertexs have been already explored
+    current_counter=1;     // Amount of vertexs we are exploring at this time
+    newVertexs_counter=0;  // Save how many vertexs will be in the next round
+
+    k=0;
+    while(current_counter != 0 && k<limit_sequential){ 
+        //printf("Round %d Sequential\n", k);
+        for(i=0; i<current_counter; i++){
+            v = local_T[local_counter + i];
+            //printf(" Visiting vertex=%d\n", v);
+            for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
+                w = edges[j];                // Get next neighbor w of v
+                if (p[w] == -1) {            // Check if w is undiscovered
+                    p[w] = v;                  // Set v as the parent of w
+                    dist[w] = dist[v]+1;       // Set distance of w
+                    local_T[local_counter+ current_counter + newVertexs_counter]= w; // Add w to local_T and increase number of vertices discovered
+                    newVertexs_counter++;
+                    //printf("    Thread %d has discovered vertex i=%d\n", thread_id, w);
+                }
+            }
+        }
+        local_counter += current_counter;
+        current_counter = newVertexs_counter;
+        newVertexs_counter = 0;
+        k++;
+
+    }
+
+    // Prepare S and T[0] for parallel
+    T[0] = newVertexs_counter;
+    for(i=0; i<newVertexs_counter; i++){
+        S[i] = local_T[local_counter+i];
+    } */
+
+        }
+
+    //NOW GO PARRALLEL
     
 
     //printf("Master, thread: %d set everything :)\n", omp_get_thread_num());
     //printf("Number of threads: %d\n", num_threads);
-        }
+        
     
     //printf("Hi from thread %d\n", thread_id);
     T[thread_id+offset] = 0;
     #pragma omp barrier
     
     while(T[0]!= 0){ 
-        //printf("\n ANOTHER GENERAL ROUND\n");
+        //printf("\n ANOTHER GENERAL ROUND (thread=%d)\n", thread_id);
         T[offset+thread_id]=0; // NumVertex each thread has discovered
         local_counter=0;       // Amount of vertexs have been already explored
         current_counter=0;     // Amount of vertexs we are exploring at this time
@@ -95,8 +135,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             local_T[newVertexs_counter] = S[i]; // first store localy the partition of the vertexs
             newVertexs_counter++;
         }
-        //printf(" Local Counter=%d, Current Counter=%d, newVertexs_counter=%d\n", local_counter, current_counter, newVertexs_counter);
-        //printf("  Thread %d has %d vertexs to analyse\n", thread_id, newVertexs_counter);
+        //printf(" Local Counter=%d, Current Counter=%d, newVertexs_counter=%d (thread=%d)\n", local_counter, current_counter, newVertexs_counter, thread_id);
+        //printf("  Thread %d has %d vertexs to analyse (thread=%d)\n", thread_id, newVertexs_counter, thread_id);
 
         // Then make each thread in parallel process each of is own vertexs
         for(i=0; i<rounds_k; i++){
@@ -105,7 +145,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             //printf("    Thread %d - round %d\n", thread_id, i);
             for(k=0; k<current_counter; k++){  // Each round
                 v = local_T[local_counter + k];
-                //printf("     ->Thread %d - round %d, Vertex=%d\n", thread_id, i, v);
+                //printf("     ->Thread %d - round %d\n", thread_id, i);
                 for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
                     w = edges[j];                  // Get next neighbor w of v
                     if (p[w] == -1) {              // Check if w is undiscovered
@@ -113,7 +153,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                         dist[w] = dist[v]+1;       // Set distance of w
                         local_T[local_counter + current_counter + newVertexs_counter]= w; // Add w to local_T d
                         newVertexs_counter++;      // Increase the num of vertexs discovered
-                        //printf("       -Thread %d discovered vertex %d, newVertexs=%d\n", thread_id, w, newVertexs_counter);
+                        //printf("       -Thread %d discovered vertex %d, newVertexs=%d (thread=%d)\n", thread_id, w, newVertexs_counter, thread_id);
                     }
                 }
             }
@@ -146,6 +186,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                 T[offset+i] = acumulator;
                 acumulator += aux;
             }
+            //fflush(stdout);
         }
         #pragma omp barrier
 
