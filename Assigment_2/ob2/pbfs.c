@@ -24,9 +24,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     int i,j;          // Loop indices
     int v,w;          // Pointers to vertices
-    int *temp;        // Temporary pointer
-    int deep;
-    deep=0;
 
     int local_counter=0;
     int *local_T;
@@ -57,35 +54,18 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     p[1] = 1;        // Set the parent of starting vertex to itself
     dist[1] = 0;     // Set the distance from the starting vertex to itself
-
-
-    //printf("Master, thread: %d set everything :)\n", omp_get_thread_num());
-    //printf("Number of threads: %d\n", num_threads);
         }
     
-    //printf("Hi from thread %d\n", thread_id);
     T[thread_id+offset] = 0;
     #pragma omp barrier
 
-    /* #pragma omp single
-    {
-        for(i=0; i< num_threads; i++){
-            printf("i=%d, T[offset+i]= %d\n", i, T[offset+i]);
-        }
-    }
- */
     
     while(T[0]!= 0){ 
         T[offset+thread_id]=0; // NumVertex each threa has discovered
         local_counter=0;
         int flag=1;
-        deep++;
         #pragma omp for
         for(i=0; i<T[0]; i++){
-            /* if(flag==1){
-                printf("  Thread %d has i=%d\n", thread_id, i);
-                flag=0;
-            } */
             
             v = S[i];
             for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
@@ -96,7 +76,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                     local_T[local_counter]= w; // Add w to local_T and increase number of vertices discovered
                     local_counter++;
                     T[offset+thread_id] = local_counter;
-                    //printf("    Thread %d has discovered vertex i=%d\n", thread_id, w);
                 }
             }
         }
@@ -107,7 +86,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             for(i=0; i<num_threads; i++){
                 total += T[offset+i];
             }
-            //printf("Round %d has been %d vertexs discovered in total\n", deep, total);
             T[0] = total; //Set the amount of vertexs for next round 
 
             //Prepare the index where each vertex should write in S
