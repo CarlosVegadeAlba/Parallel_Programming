@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 //
   int BFS               = true;    /* Sequential BFS */
   int PBFS              = true;   /* Parallel BFS */
-  int ABFS              = false;   /* Alternative Parallel BFS */
+  int ABFS              = true;   /* Alternative Parallel BFS */
 
 // Read input and check that it is in order
   if (!get_input(argc,argv,&n_graphs,&n_runs,&n_conf,&conf,&name))	

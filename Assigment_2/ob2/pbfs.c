@@ -61,10 +61,10 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
 
     //printf("Master, thread: %d set everything :)\n", omp_get_thread_num());
-    printf("Number of threads: %d\n", num_threads);
+    //printf("Number of threads: %d\n", num_threads);
         }
     
-    printf("Hi from thread %d\n", thread_id);
+    //printf("Hi from thread %d\n", thread_id);
     T[thread_id+offset] = 0;
     #pragma omp barrier
 
@@ -83,10 +83,10 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         deep++;
         #pragma omp for
         for(i=0; i<T[0]; i++){
-            if(flag==1){
+            /* if(flag==1){
                 printf("  Thread %d has i=%d\n", thread_id, i);
                 flag=0;
-            }
+            } */
             
             v = S[i];
             for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
@@ -97,7 +97,7 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                     local_T[local_counter]= w; // Add w to local_T and increase number of vertices discovered
                     local_counter++;
                     T[offset+thread_id] = local_counter;
-                    printf("    Thread %d has discovered vertex i=%d\n", thread_id, w);
+                    //printf("    Thread %d has discovered vertex i=%d\n", thread_id, w);
                 }
             }
         }
@@ -108,7 +108,7 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             for(i=0; i<num_threads; i++){
                 total += T[offset+i];
             }
-            printf("Round %d has been %d vertexs discovered in total\n", deep, total);
+            //printf("Round %d has been %d vertexs discovered in total\n", deep, total);
             T[0] = total; //Set the amount of vertexs for next round 
 
             //Prepare the index where each vertex should write in S
@@ -134,59 +134,4 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         #pragma omp barrier
     }
 
-
-    /* while (T[0] == 0) {               // Loop until all vertices have been discovered
-        #pragma omp single
-            {
-                printf("Round %d -> has %d vertex to be analyzed\n", deep, T[0]);
-                deep++;
-                printf(" The vertexs are: ");
-                for (i=0; i<T[0]; i++){
-                    printf("%d, ", S[i]);
-                }
-                printf("\n");
-                fflush(stdout);
-            }
-        #pragma omp barrier
-        #pragma omp for
-        for(i=0;i<T[0];i++) {           // Loop over vertices in S
-            printf("   Thread: %d has i=%d\n", omp_get_thread_num(), i);
-            fflush(stdout);
-
-            v = S[i];                      // Grab next vertex v in S
-            for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
-                w = edges[j];                // Get next neighbor w of v
-                if (p[w] == -1) {            // Check if w is undiscovered
-                    p[w] = v;                // Set v as the parent of w
-                    dist[w] = dist[v]+1;     // Set distance of w 
-
-                    local_T[local_counter] = w;
-                    local_counter++;
-                    printf("     Thread: %d added the edge: %d\n", omp_get_thread_num(), w);
-
-                }
-            }  // End loop over neighbors of v
-        }  // End loop of vertices in S
-        T[thread_id+offset] = local_counter;
-
-
-        #pragma omp barrier
-        #pragma omp single
-            {
-        int v_nextRound = 0;
-        for(i=0; i<num_threads; i++){
-            v_nextRound += T[offset+i];
-        }
-
-        temp = S;  // Swap S and T
-        S = T;
-        T = temp;
-        num_r = num_w; // Set number of elements in S
-        num_w = 0;  
-        fflush(stdout);
-            }
-            // Set T as empty
-        #pragma omp barrier
-    } //  End loop over entire graph
-    #pragma omp barrier */
 }
