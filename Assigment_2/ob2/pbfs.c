@@ -71,20 +71,16 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                     dist[w] = dist[v]+1;       // Set distance of w
                     local_T[local_counter]= w; // Add w to local_T and increase number of vertices discovered
                     local_counter++;           // Increase the counter, in the shared value and the local value
-                    T[offset+thread_id]++;
                 }
             }
         }
+        T[offset+thread_id] = local_counter;
+
         #pragma omp barrier  // Wait for all threads to finish this round before moving to the next one
 
+        // Esto lo puede hacer cada uno
         #pragma omp single   // Only one thread prepares the copy of S
-        {
-            int total=0;     // Total amount of vertices discovered by all the threads
-            for(i=0; i<num_threads; i++){
-                total += T[offset+i];
-            }
-            T[0] = total; //Set the amount of new vertices for next round 
-
+        {   
             // Prepare the index where each vertex should write in S
             // For example thread_0 writes at 0, thread_1 writes where thread_0 finishes...
             int acumulator = 0; // Get the first amount of the frist thread
@@ -95,8 +91,9 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                 T[offset+i] = acumulator;
                 acumulator += aux;
             }
+            T[0] = acumulator; //Set the amount of new vertices for next round 
         }
-        #pragma omp barrier // Before making parallel copy of the array wait until is ready
+        //#pragma omp barrier // Before making parallel copy of the array wait until is ready
 
         // Get where each thread should start writing
         int start=T[offset+thread_id];
