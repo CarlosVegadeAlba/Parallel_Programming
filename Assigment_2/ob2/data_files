@@ -1,4 +1,45 @@
 1
+10
+12 1 6 10 14 18 20 24 28 32 36 40 44
+/export/data/fredrikm/inf236/graphs/rgg_n_2_22_s0.mtx
+
+4
+15
+9 1 10 20 30 40 50 60 70 80
+/export/data/fredrikm/inf236/graphs/road_usa.mtx
+/export/data/fredrikm/inf236/graphs/delaunay_n24.mtx
+/export/data/fredrikm/inf236/graphs/hugebubbles-00020.mtx
+/export/data/fredrikm/inf236/graphs/rgg_n_2_22_s0.mtx
+
+
+
+# Road_usa 
+1
+15
+12 1 6 10 14 18 20 24 28 32 36 40 44
+/export/data/fredrikm/inf236/graphs/road_usa.mtx
+
+# Delaunay_n24
+1
+15
+12 1 6 10 14 18 20 24 28 32 36 40 44
+/export/data/fredrikm/inf236/graphs/delaunay_n24.mtx
+
+
+# hugebubbles-00020
+1
+15
+12 1 6 10 14 18 20 24 28 32 36 40 44
+/export/data/fredrikm/inf236/graphs/hugebubbles-00020.mtx
+
+# rgg_n_2_22_s0
+1
+15
+12 1 6 10 14 18 20 24 28 32 36 40 44
+/export/data/fredrikm/inf236/graphs/rgg_n_2_22_s0.mtx
+
+
+1
 1
 1 4 
 /export/data/fredrikm/inf236/graphs/road_usa.mtx
@@ -10,16 +51,17 @@
 
 
 
-
-
-
 4
-1
-6 1 10 20 30 40 50
+20
+9 1 10 20 30 40 50 60 70 80
 /export/data/fredrikm/inf236/graphs/road_usa.mtx
 /export/data/fredrikm/inf236/graphs/delaunay_n24.mtx
 /export/data/fredrikm/inf236/graphs/hugebubbles-00020.mtx
 /export/data/fredrikm/inf236/graphs/rgg_n_2_22_s0.mtx
+
+
+
+
 
 
 /export/data/fredrikm/inf236/smallGraphs/test.mtx

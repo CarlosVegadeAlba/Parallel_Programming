@@ -25,29 +25,31 @@
 // Note that the vertices are numbered from 1 to n (inclusive). Thus there is
 // no vertex 0.
 
+
 void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     int i,j,k;         // Loop indices
     int v,w;          // Pointers to vertices
     
     int *temp;        // Temporary pointer
-    int deep;
-    deep=0;
-    int sequentialRounds=0; // Rounds before parallel
-    int rounds_k=4;         // Rounds before copying to S  
-    int limit_sequential=0;
+    int sequentialRounds=200; // Rounds before parallel
+    int rounds_k=1;         // Rounds before copying to S  
 
-    int local_counter=0;
-    int *local_T;
-    int current_counter=0;
-    int newVertexs_counter=0;
+    int *local_current_T;        // Vertexs of this round
+    int current_counter=0;       // Counter of vertexs of this round
 
-    local_T = (int *) malloc(sizeof(int)*(n+2));
-    if(!local_T){
-        printf("Error allocating\n");
+    int *local_new_T;            // Vertexs of next round
+    int newVertexs_counter=0;    // Counter of vertexs of next round
+     
+    local_current_T = (int *) malloc(sizeof(int)*(n+2));
+    local_new_T = (int *) malloc(sizeof(int)*(n+2));
+
+    if(!local_current_T || !local_new_T){
+        fprintf(stderr, "Memory allocation failed\n");
+        free(local_current_T);
+        free(local_new_T);
         return;
     }
-
 
     const int thread_id = omp_get_thread_num();
     const int num_threads = omp_get_num_threads();
@@ -66,102 +68,77 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         dist[i] = -1;
     }
 
-    local_T[0] = 1;        // Vertexs of this round
     p[1] = 1;        // Set the parent of starting vertex to itself
     dist[1] = 0;     // Set the distance from the starting vertex to itself
     T[0] = 1; // Num Vertexs of this round
     S[0] = 1; // Vertexs of this round
 
-    
-    /* local_counter=0;       // Amount of vertexs have been already explored
     current_counter=1;     // Amount of vertexs we are exploring at this time
-    newVertexs_counter=0;  // Save how many vertexs will be in the next round
-
     k=0;
-    while(current_counter != 0 && k<limit_sequential){ 
-        //printf("Round %d Sequential\n", k);
+    while(current_counter != 0 && k<sequentialRounds){ 
+        newVertexs_counter=0;  // Save how many vertexs will be in the next round
         for(i=0; i<current_counter; i++){
-            v = local_T[local_counter + i];
-            //printf(" Visiting vertex=%d\n", v);
+            v = S[i];
+
             for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
                 w = edges[j];                // Get next neighbor w of v
                 if (p[w] == -1) {            // Check if w is undiscovered
                     p[w] = v;                  // Set v as the parent of w
                     dist[w] = dist[v]+1;       // Set distance of w
-                    local_T[local_counter+ current_counter + newVertexs_counter]= w; // Add w to local_T and increase number of vertices discovered
+                    local_current_T[newVertexs_counter]= w; // Add w to local_T and increase number of vertices discovered
                     newVertexs_counter++;
-                    //printf("    Thread %d has discovered vertex i=%d\n", thread_id, w);
                 }
             }
         }
-        local_counter += current_counter;
         current_counter = newVertexs_counter;
-        newVertexs_counter = 0;
         k++;
-
+        // Update S
+        temp = S;
+        S = local_current_T; 
+        local_current_T = temp;
+        T[0] = newVertexs_counter;
     }
-
-    // Prepare S and T[0] for parallel
-    T[0] = newVertexs_counter;
-    for(i=0; i<newVertexs_counter; i++){
-        S[i] = local_T[local_counter+i];
-    } */
-
         }
 
-    //NOW GO PARRALLEL
-    
 
-    //printf("Master, thread: %d set everything :)\n", omp_get_thread_num());
-    //printf("Number of threads: %d\n", num_threads);
-        
-    
-    //printf("Hi from thread %d\n", thread_id);
+    //NOW GO PARRALLEL
     T[thread_id+offset] = 0;
     #pragma omp barrier
     
     while(T[0]!= 0){ 
-        //printf("\n ANOTHER GENERAL ROUND (thread=%d)\n", thread_id);
         T[offset+thread_id]=0; // NumVertex each thread has discovered
-        local_counter=0;       // Amount of vertexs have been already explored
         current_counter=0;     // Amount of vertexs we are exploring at this time
         newVertexs_counter=0;  // Save how many vertexs will be in the next round
-        int flag=1;
-        deep++;
-        //printf(" Local Counter=%d, Current Counter=%d, newVertexs_counter=%d\n", local_counter, current_counter, newVertexs_counter);
 
         #pragma omp for
         for(i=0; i<T[0]; i++){
-            local_T[newVertexs_counter] = S[i]; // first store localy the partition of the vertexs
+            local_current_T[newVertexs_counter] = S[i]; // first store localy the partition of the vertexs
             newVertexs_counter++;
         }
-        //printf(" Local Counter=%d, Current Counter=%d, newVertexs_counter=%d (thread=%d)\n", local_counter, current_counter, newVertexs_counter, thread_id);
-        //printf("  Thread %d has %d vertexs to analyse (thread=%d)\n", thread_id, newVertexs_counter, thread_id);
 
         // Then make each thread in parallel process each of is own vertexs
         for(i=0; i<rounds_k; i++){
             current_counter = newVertexs_counter;  // Change the new vertexs to current ones
             newVertexs_counter=0;                  // Reset the new ones to 0
-            //printf("    Thread %d - round %d\n", thread_id, i);
             for(k=0; k<current_counter; k++){  // Each round
-                v = local_T[local_counter + k];
-                //printf("     ->Thread %d - round %d\n", thread_id, i);
+                v = local_current_T[k];
                 for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
                     w = edges[j];                  // Get next neighbor w of v
                     if (p[w] == -1) {              // Check if w is undiscovered
                         p[w] = v;                  // Set v as the parent of w
                         dist[w] = dist[v]+1;       // Set distance of w
-                        local_T[local_counter + current_counter + newVertexs_counter]= w; // Add w to local_T d
+                        local_new_T[newVertexs_counter]= w; // Add w to local_T d
                         newVertexs_counter++;      // Increase the num of vertexs discovered
-                        //printf("       -Thread %d discovered vertex %d, newVertexs=%d (thread=%d)\n", thread_id, w, newVertexs_counter, thread_id);
                     }
                 }
             }
-            local_counter += current_counter;      // We have explored all for this current round
+            // Update the local_current_T
+            temp = local_current_T;
+            local_current_T = local_new_T;
+            local_new_T = temp;
         }
 
         // Now has been already k iterations we make the threads put the info together
-        //printf(" %d total, %d analyzed, %d new, by %d thread\n", local_counter, current_counter, newVertexs_counter, thread_id);
         T[offset+thread_id] = newVertexs_counter;
 
         #pragma omp barrier
@@ -169,12 +146,10 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         // Make one thread prepare where each thread should write in the S array
         #pragma omp single
         {
-            //printf(" Getting things ready for next round\n");
             int total=0;
             for(i=0; i<num_threads; i++){
                 total += T[offset+i];
             }
-            //printf(" Communication %d had %d vertexs discovered in total\n", deep, total);
             T[0] = total; //Set the amount of vertexs for next round 
 
             //Prepare the index where each vertex should write in S
@@ -195,13 +170,14 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
         // Copy to the global array
         for(i=0; i<newVertexs_counter; i++){
-            S[start+i]= local_T[local_counter + i];
+            S[start+i]= local_current_T[i];
         }
-
-        //printf(" Local Counter=%d, Current Counter=%d, newVertexs_counter=%d\n", local_counter, current_counter, newVertexs_counter);
-        //sleep(1);
 
         #pragma omp barrier
     }
-
+    
+    // Free variables
+    free(local_current_T);
+    free(local_new_T);
 }
+
