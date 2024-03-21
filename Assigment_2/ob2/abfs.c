@@ -32,8 +32,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     int v,w;          // Pointers to vertices
     
     int *temp;        // Temporary pointer
-    int sequentialRounds=200; // Rounds before parallel
-    int rounds_k=1;         // Rounds before copying to S  
+    int sequentialRounds=100; // Rounds before parallel
+    int rounds_k=2;         // Rounds before copying to S  
 
     int *local_current_T;        // Vertexs of this round
     int current_counter=0;       // Counter of vertexs of this round
@@ -136,6 +136,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             temp = local_current_T;
             local_current_T = local_new_T;
             local_new_T = temp;
+            #pragma omp barrier
         }
 
         // Now has been already k iterations we make the threads put the info together
@@ -180,4 +181,5 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     free(local_current_T);
     free(local_new_T);
 }
+
 
