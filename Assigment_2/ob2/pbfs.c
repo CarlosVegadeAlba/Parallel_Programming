@@ -59,7 +59,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     
     // Start the graph search
     while(T[0]!= 0){  
-        T[offset+thread_id]=0; // Number of discovered vertices of this thread for this round
         local_counter=0;       // Also store them locally
 
         //Start the searching in parallel
@@ -82,16 +81,13 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
         // Prepare the index where each vertex should write in S, it can be done in parallel
         // For example thread_0 writes at 0, thread_1 writes where thread_0 finishes...
-        int acumulator = 0; // Get the first amount of the frist thread
-        int aux=0;
+        int start = 0; // Get the first amount of the frist thread
 
         // Gets where do start writting in the memory, finishes when knowing where to start
         // to do not work more than needed
         for(i=0; i<thread_id; i++){
-            aux = T[offset+i];
-            acumulator += aux;
+            start += T[offset+i];
         }
-        int start = acumulator;
 
         // Copy to the global array in parallel
         for(i=0; i<local_counter; i++){
@@ -99,7 +95,7 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         }
 
         if(thread_id == (num_threads-1)){ // only one vertex sets the total amount of threads
-            T[0] = acumulator+local_counter; //Set the amount of new vertices for next round 
+            T[0] = start+local_counter; //Set the amount of new vertices for next round 
         }
 
         #pragma omp barrier // Wait until every thread has finished copying to S before moving to the next round
