@@ -33,7 +33,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     
     int *temp;        // Temporary pointer
     int sequentialRounds=100; // Rounds before parallel
-    int rounds_k=2;         // Rounds before copying to S  
+    int rounds_k=3;         // Rounds before copying to S  
 
     int *local_current_T;        // Vertexs of this round
     int current_counter=0;       // Counter of vertexs of this round
@@ -56,13 +56,11 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     // The array has n_threads+2 values
     const int offset = 2;
 
-    T[thread_id+offset] = 0;      // Number of vertices in T for this thread
-
+    //T[thread_id+offset] = 0;      // Number of vertices in T for this thread
 
     // FIRST SEQUENTIAL
     #pragma omp single
         {
-
     for(i=1;i<=n;i++) {     // Set that every node is unvisited
         p[i] = -1;          // Using -1 to mark that a vertex is unvisited
         dist[i] = -1;
@@ -79,7 +77,6 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         newVertexs_counter=0;  // Save how many vertexs will be in the next round
         for(i=0; i<current_counter; i++){
             v = S[i];
-
             for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
                 w = edges[j];                // Get next neighbor w of v
                 if (p[w] == -1) {            // Check if w is undiscovered
@@ -99,14 +96,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         T[0] = newVertexs_counter;
     }
         }
-
-
-    //NOW GO PARRALLEL
-    T[thread_id+offset] = 0;
-    #pragma omp barrier
     
     while(T[0]!= 0){ 
-        T[offset+thread_id]=0; // NumVertex each thread has discovered
         current_counter=0;     // Amount of vertexs we are exploring at this time
         newVertexs_counter=0;  // Save how many vertexs will be in the next round
 
@@ -117,11 +108,11 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         }
 
         // Then make each thread in parallel process each of is own vertexs
-        for(i=0; i<rounds_k; i++){
+        for(k=0; k<rounds_k; k++){
             current_counter = newVertexs_counter;  // Change the new vertexs to current ones
             newVertexs_counter=0;                  // Reset the new ones to 0
-            for(k=0; k<current_counter; k++){  // Each round
-                v = local_current_T[k];
+            for(i=0; i<current_counter; i++){  // Each round
+                v = local_current_T[i];
                 for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
                     w = edges[j];                  // Get next neighbor w of v
                     if (p[w] == -1) {              // Check if w is undiscovered
@@ -144,34 +135,23 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
         #pragma omp barrier
 
-        // Make one thread prepare where each thread should write in the S array
-        #pragma omp single
-        {
-            int total=0;
-            for(i=0; i<num_threads; i++){
-                total += T[offset+i];
-            }
-            T[0] = total; //Set the amount of vertexs for next round 
+        // Prepare the index where each vertex should write in S, it can be done in parallel
+        // For example thread_0 writes at 0, thread_1 writes where thread_0 finishes...
+        int start = 0; // Get the first amount of the frist thread
 
-            //Prepare the index where each vertex should write in S
-            int acumulator = 0; // Get the first amount of the frist thread
-            int aux;
-
-            for(i=0; i<num_threads; i++){
-                aux = T[offset+i];
-                T[offset+i] = acumulator;
-                acumulator += aux;
-            }
-            //fflush(stdout);
+        // Gets where do start writting in the memory, finishes when knowing where to start
+        // to do not work more than needed
+        for(i=0; i<thread_id; i++){
+            start += T[offset+i];
         }
-        #pragma omp barrier
 
-        // Get where each thread should start writting
-        int start=T[offset+thread_id];
-
-        // Copy to the global array
+        // Copy to the global array in parallel
         for(i=0; i<newVertexs_counter; i++){
             S[start+i]= local_current_T[i];
+        }
+
+        if(thread_id == (num_threads-1)){ // only one vertex sets the total amount of threads
+            T[0] = start+newVertexs_counter; //Set the amount of new vertices for next round 
         }
 
         #pragma omp barrier
