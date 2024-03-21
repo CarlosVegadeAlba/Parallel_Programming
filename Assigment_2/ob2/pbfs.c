@@ -20,6 +20,7 @@
 // Note that the vertices are numbered from 1 to n (inclusive). Thus there is
 // no vertex 0.
 
+
 void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     int i,j;          // Loop indices
@@ -53,7 +54,8 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     dist[1] = 0;     // Set the distance from the starting vertex to itself
         }
     
-    #pragma omp barrier  // Wait before everything is ready
+    
+    //#pragma omp barrier (IMPLICIT IN SINGLE)  // Wait before everything is ready
     
     // Start the graph search
     while(T[0]!= 0){  
@@ -78,29 +80,26 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
         #pragma omp barrier  // Wait for all threads to finish this round before moving to the next one
 
-        // Esto lo puede hacer cada uno
-        #pragma omp single   // Only one thread prepares the copy of S
-        {   
-            // Prepare the index where each vertex should write in S
-            // For example thread_0 writes at 0, thread_1 writes where thread_0 finishes...
-            int acumulator = 0; // Get the first amount of the frist thread
-            int aux;
+        // Prepare the index where each vertex should write in S, it can be done in parallel
+        // For example thread_0 writes at 0, thread_1 writes where thread_0 finishes...
+        int acumulator = 0; // Get the first amount of the frist thread
+        int aux=0;
 
-            for(i=0; i<num_threads; i++){
-                aux = T[offset+i];
-                T[offset+i] = acumulator;
-                acumulator += aux;
-            }
-            T[0] = acumulator; //Set the amount of new vertices for next round 
+        // Gets where do start writting in the memory, finishes when knowing where to start
+        // to do not work more than needed
+        for(i=0; i<thread_id; i++){
+            aux = T[offset+i];
+            acumulator += aux;
         }
-        //#pragma omp barrier // Before making parallel copy of the array wait until is ready
-
-        // Get where each thread should start writing
-        int start=T[offset+thread_id];
+        int start = acumulator;
 
         // Copy to the global array in parallel
         for(i=0; i<local_counter; i++){
             S[start+i]= local_T[i];
+        }
+
+        if(thread_id == (num_threads-1)){ // only one vertex sets the total amount of threads
+            T[0] = acumulator+local_counter; //Set the amount of new vertices for next round 
         }
 
         #pragma omp barrier // Wait until every thread has finished copying to S before moving to the next round
