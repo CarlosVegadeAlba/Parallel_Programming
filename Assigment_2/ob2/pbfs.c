@@ -54,7 +54,6 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     dist[1] = 0;     // Set the distance from the starting vertex to itself
         }
     
-    
     //#pragma omp barrier (IMPLICIT IN SINGLE)  // Wait before everything is ready
     
     // Start the graph search
@@ -62,7 +61,7 @@ void pbfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         local_counter=0;       // Also store them locally
 
         //Start the searching in parallel
-        #pragma omp for
+        #pragma omp for nowait  // Do not block the write on T
         for(i=0; i<T[0]; i++){
             v = S[i]; // The value of i is unique for each thread
             for(j=ver[v]; j<ver[v+1]; j++) {  // Go through the neighbors of v

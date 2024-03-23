@@ -32,8 +32,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     int v,w;          // Pointers to vertices
     
     int *temp;        // Temporary pointer
-    int sequentialRounds=100; // Rounds before parallel
-    int rounds_k=3;         // Rounds before copying to S  
+    int sequentialRounds=0; // Rounds before parallel
+    int rounds_k=1;         // Rounds before copying to S  
 
     int *local_current_T;        // Vertexs of this round
     int current_counter=0;       // Counter of vertexs of this round
@@ -55,8 +55,6 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     const int num_threads = omp_get_num_threads();
     // The array has n_threads+2 values
     const int offset = 2;
-
-    //T[thread_id+offset] = 0;      // Number of vertices in T for this thread
 
     // FIRST SEQUENTIAL
     #pragma omp single
@@ -96,12 +94,14 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         T[0] = newVertexs_counter;
     }
         }
+    // Implicit barrier of single
+
     
     while(T[0]!= 0){ 
         current_counter=0;     // Amount of vertexs we are exploring at this time
         newVertexs_counter=0;  // Save how many vertexs will be in the next round
 
-        #pragma omp for
+        #pragma omp for nowait  // No wait to make the write in T vertices they discovered 
         for(i=0; i<T[0]; i++){
             // FIRST GET THE VERTEXS FROM S
             v =  S[i]; // first store localy the partition of the vertexs
@@ -115,29 +115,33 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                 }
             }
         }
-        #pragma omp barrier // FIRST ROUND FINISHED
+        
+        if(rounds_k > 1){ // If not there would be 2 barriers
+            #pragma omp barrier // FIRST ROUND FINISHED
 
-        for(k=1; k<rounds_k; k++){
-            current_counter = newVertexs_counter;  // Change the new vertexs to current ones
-            newVertexs_counter=0;                  // Reset the new ones to 0
-            for(i=0; i<current_counter; i++){  // Each round
-                v = local_current_T[i];
-                for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
-                    w = edges[j];                  // Get next neighbor w of v
-                    if (p[w] == -1) {              // Check if w is undiscovered
-                        p[w] = v;                  // Set v as the parent of w
-                        dist[w] = dist[v]+1;       // Set distance of w
-                        local_new_T[newVertexs_counter]= w; // Add w to local_T d
-                        newVertexs_counter++;      // Increase the num of vertexs discovered
+            for(k=1; k<rounds_k && newVertexs_counter>0; k++){
+                current_counter = newVertexs_counter;  // Change the new vertexs to current ones
+                newVertexs_counter=0;                  // Reset the new ones to 0
+                for(i=0; i<current_counter; i++){  // Each round
+                    v = local_current_T[i];
+                    for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
+                        w = edges[j];                  // Get next neighbor w of v
+                        if (p[w] == -1) {              // Check if w is undiscovered
+                            p[w] = v;                  // Set v as the parent of w
+                            dist[w] = dist[v]+1;       // Set distance of w
+                            local_new_T[newVertexs_counter]= w; // Add w to local_T d
+                            newVertexs_counter++;      // Increase the num of vertexs discovered
+                        }
                     }
                 }
+                // Update the local_current_T
+                temp = local_current_T;
+                local_current_T = local_new_T;
+                local_new_T = temp;
+                #pragma omp barrier
             }
-            // Update the local_current_T
-            temp = local_current_T;
-            local_current_T = local_new_T;
-            local_new_T = temp;
-            #pragma omp barrier
         }
+        
         
 
         // Then make each thread in parallel process each of is own vertexs
