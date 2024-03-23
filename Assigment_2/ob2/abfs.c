@@ -103,12 +103,21 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
         #pragma omp for
         for(i=0; i<T[0]; i++){
-            local_current_T[newVertexs_counter] = S[i]; // first store localy the partition of the vertexs
-            newVertexs_counter++;
+            // FIRST GET THE VERTEXS FROM S
+            v =  S[i]; // first store localy the partition of the vertexs
+            for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
+                w = edges[j];                  // Get next neighbor w of v
+                if (p[w] == -1) {              // Check if w is undiscovered
+                    p[w] = v;                  // Set v as the parent of w
+                    dist[w] = dist[v]+1;       // Set distance of w
+                    local_current_T[newVertexs_counter]= w; // Add w to local_T d
+                    newVertexs_counter++;      // Increase the num of vertexs discovered
+                }
+            }
         }
+        #pragma omp barrier // FIRST ROUND FINISHED
 
-        // Then make each thread in parallel process each of is own vertexs
-        for(k=0; k<rounds_k; k++){
+        for(k=1; k<rounds_k; k++){
             current_counter = newVertexs_counter;  // Change the new vertexs to current ones
             newVertexs_counter=0;                  // Reset the new ones to 0
             for(i=0; i<current_counter; i++){  // Each round
@@ -129,6 +138,9 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             local_new_T = temp;
             #pragma omp barrier
         }
+        
+
+        // Then make each thread in parallel process each of is own vertexs
 
         // Now has been already k iterations we make the threads put the info together
         T[offset+thread_id] = newVertexs_counter;
