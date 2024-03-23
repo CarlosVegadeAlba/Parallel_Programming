@@ -32,7 +32,7 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     int v,w;          // Pointers to vertices
     
     int *temp;        // Temporary pointer
-    int sequentialRounds=0; // Rounds before parallel
+    int sequentialRounds=35; // Rounds before parallel
     int rounds_k=1;         // Rounds before copying to S  
 
     int *local_current_T;        // Vertexs of this round
