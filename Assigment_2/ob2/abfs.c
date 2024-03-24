@@ -32,8 +32,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     int v,w;          // Pointers to vertices
     
     int *temp;        // Temporary pointer
-    int sequentialRounds=35; // Rounds before parallel
-    int rounds_k=1;         // Rounds before copying to S  
+    int sequentialRounds=50; // Rounds before parallel
+    int rounds_k=2;         // Rounds before copying to S  
 
     int *local_current_T;        // Vertexs of this round
     int current_counter=0;       // Counter of vertexs of this round
@@ -55,6 +55,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     const int num_threads = omp_get_num_threads();
     // The array has n_threads+2 values
     const int offset = 2;
+
+    //T[thread_id+offset] = 0;      // Number of vertices in T for this thread
 
     // FIRST SEQUENTIAL
     #pragma omp single
@@ -94,8 +96,6 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         T[0] = newVertexs_counter;
     }
         }
-    // Implicit barrier of single
-
     
     while(T[0]!= 0){ 
         current_counter=0;     // Amount of vertexs we are exploring at this time
@@ -115,11 +115,11 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                 }
             }
         }
-        
+
         if(rounds_k > 1){ // If not there would be 2 barriers
             #pragma omp barrier // FIRST ROUND FINISHED
 
-            for(k=1; k<rounds_k && newVertexs_counter>0; k++){
+            for(k=1; k<rounds_k; k++){
                 current_counter = newVertexs_counter;  // Change the new vertexs to current ones
                 newVertexs_counter=0;                  // Reset the new ones to 0
                 for(i=0; i<current_counter; i++){  // Each round
@@ -177,5 +177,4 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     free(local_current_T);
     free(local_new_T);
 }
-
 
