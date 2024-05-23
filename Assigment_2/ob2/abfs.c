@@ -33,13 +33,13 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
     
     int *temp;        // Temporary pointer
     int sequentialRounds=50; // Rounds before parallel
-    int rounds_k=2;         // Rounds before copying to S  
+    int rounds_k=5;         // Rounds before copying to S  
 
-    int *local_current_T;        // Vertexs of this round
-    int current_counter=0;       // Counter of vertexs of this round
+    int *local_current_T;        // vertices of this round
+    int current_counter=0;       // Counter of vertices of this round
 
-    int *local_new_T;            // Vertexs of next round
-    int newVertexs_counter=0;    // Counter of vertexs of next round
+    int *local_new_T;            // vertices of next round
+    int newvertices_counter=0;    // Counter of vertices of next round
      
     local_current_T = (int *) malloc(sizeof(int)*(n+2));
     local_new_T = (int *) malloc(sizeof(int)*(n+2));
@@ -68,13 +68,13 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
 
     p[1] = 1;        // Set the parent of starting vertex to itself
     dist[1] = 0;     // Set the distance from the starting vertex to itself
-    T[0] = 1; // Num Vertexs of this round
-    S[0] = 1; // Vertexs of this round
+    T[0] = 1; // Num vertices of this round
+    S[0] = 1; // vertices of this round
 
-    current_counter=1;     // Amount of vertexs we are exploring at this time
+    current_counter=1;     // Amount of vertices we are exploring at this time
     k=0;
     while(current_counter != 0 && k<sequentialRounds){ 
-        newVertexs_counter=0;  // Save how many vertexs will be in the next round
+        newvertices_counter=0;  // Save how many vertices will be in the next round
         for(i=0; i<current_counter; i++){
             v = S[i];
             for(j=ver[v];j<ver[v+1];j++) { // Go through the neighbors of v
@@ -82,36 +82,36 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                 if (p[w] == -1) {            // Check if w is undiscovered
                     p[w] = v;                  // Set v as the parent of w
                     dist[w] = dist[v]+1;       // Set distance of w
-                    local_current_T[newVertexs_counter]= w; // Add w to local_T and increase number of vertices discovered
-                    newVertexs_counter++;
+                    local_current_T[newvertices_counter]= w; // Add w to local_T and increase number of vertices discovered
+                    newvertices_counter++;
                 }
             }
         }
-        current_counter = newVertexs_counter;
+        current_counter = newvertices_counter;
         k++;
         // Update S
         temp = S;
         S = local_current_T; 
         local_current_T = temp;
-        T[0] = newVertexs_counter;
+        T[0] = newvertices_counter;
     }
         }
     
     while(T[0]!= 0){ 
-        current_counter=0;     // Amount of vertexs we are exploring at this time
-        newVertexs_counter=0;  // Save how many vertexs will be in the next round
+        current_counter=0;     // Amount of vertices we are exploring at this time
+        newvertices_counter=0;  // Save how many vertices will be in the next round
 
         #pragma omp for nowait  // No wait to make the write in T vertices they discovered 
         for(i=0; i<T[0]; i++){
-            // FIRST GET THE VERTEXS FROM S
-            v =  S[i]; // first store localy the partition of the vertexs
+            // FIRST GET THE vertices FROM S
+            v =  S[i]; // first store localy the partition of the vertices
             for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
                 w = edges[j];                  // Get next neighbor w of v
                 if (p[w] == -1) {              // Check if w is undiscovered
                     p[w] = v;                  // Set v as the parent of w
                     dist[w] = dist[v]+1;       // Set distance of w
-                    local_current_T[newVertexs_counter]= w; // Add w to local_T d
-                    newVertexs_counter++;      // Increase the num of vertexs discovered
+                    local_current_T[newvertices_counter]= w; // Add w to local_T d
+                    newvertices_counter++;      // Increase the num of vertices discovered
                 }
             }
         }
@@ -120,8 +120,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
             #pragma omp barrier // FIRST ROUND FINISHED
 
             for(k=1; k<rounds_k; k++){
-                current_counter = newVertexs_counter;  // Change the new vertexs to current ones
-                newVertexs_counter=0;                  // Reset the new ones to 0
+                current_counter = newvertices_counter;  // Change the new vertices to current ones
+                newvertices_counter=0;                  // Reset the new ones to 0
                 for(i=0; i<current_counter; i++){  // Each round
                     v = local_current_T[i];
                     for(j=ver[v];j<ver[v+1];j++) {     // Go through the neighbors of v
@@ -129,8 +129,8 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
                         if (p[w] == -1) {              // Check if w is undiscovered
                             p[w] = v;                  // Set v as the parent of w
                             dist[w] = dist[v]+1;       // Set distance of w
-                            local_new_T[newVertexs_counter]= w; // Add w to local_T d
-                            newVertexs_counter++;      // Increase the num of vertexs discovered
+                            local_new_T[newvertices_counter]= w; // Add w to local_T d
+                            newvertices_counter++;      // Increase the num of vertices discovered
                         }
                     }
                 }
@@ -144,10 +144,10 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         
         
 
-        // Then make each thread in parallel process each of is own vertexs
+        // Then make each thread in parallel process each of is own vertices
 
         // Now has been already k iterations we make the threads put the info together
-        T[offset+thread_id] = newVertexs_counter;
+        T[offset+thread_id] = newvertices_counter;
 
         #pragma omp barrier
 
@@ -162,12 +162,12 @@ void abfs(int n,int *ver,int *edges,int *p,int *dist,int *S,int *T) {
         }
 
         // Copy to the global array in parallel
-        for(i=0; i<newVertexs_counter; i++){
+        for(i=0; i<newvertices_counter; i++){
             S[start+i]= local_current_T[i];
         }
 
         if(thread_id == (num_threads-1)){ // only one vertex sets the total amount of threads
-            T[0] = start+newVertexs_counter; //Set the amount of new vertices for next round 
+            T[0] = start+newvertices_counter; //Set the amount of new vertices for next round 
         }
 
         #pragma omp barrier
