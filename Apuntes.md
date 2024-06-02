@@ -786,9 +786,37 @@ mpicc -Wall -O3 -o prueba1 prueba1.c
 
 mpicc -o programa programa.c
 
+### Measure Time
+
+MPI_Wtime();
+
 ---
 
-# CUDA GPU
+# GPU
+
+- Specialized, only performs compute tasks
+- Can run 1000+ threads simultaneously on one GPU processor
+- Light weight threads: Hardware support for massive multi-threading.
+- Works best when all the threads do the same thing (SIMD).
+
+### In C we use CUDA
+
+Developed by NVIDIA
+
+**Function Modifiers** :
+
+* `__global__`: Called by the host, executed by the GPU.
+* `__device__`: Called and executed by the GPU only.
+
+**Variable Modifiers** :
+
+* `__shared__`: Variable in shared memory.
+* `__device__`: Variable in global memory.
+* Variables without modifiers in kernels are thread-local.
+
+**Device Functions** :
+
+* `__syncthreads()`: Sync of threads within a block, similar to `omp barrier`.
 
 ---
 
@@ -809,6 +837,3 @@ mpicc -o programa programa.c
 5. **Scalability**
 
    - How does the program performance improve with increasing numbers of processes?
-6. a
-
-   - a
