@@ -41,7 +41,7 @@
 
 ---
 
-* **How different languages stored rows/columns when loading a value**
+* **How different languages stored rows/columns when loading a value:**
 
   * C, Java stores them in rows
   * Fortram and Matlab loads columns
@@ -50,6 +50,100 @@
 * **Moore's law (Number of transistors)**
 
   * Moore´s law says that the number of transistors in a given area will double every 18th month
+
+---
+
+* **Generating a random number in parallel region:**
+
+  * If we are generating random numbers in a parallel region it would be probable that all threads use the same seed and then get the same sequence of pseudorandom numbers
+  * This can be solved having a **centralized** thread that would be in charge of generating the random numbers (may cause many request), or a **distributed** making sure each thread recieves a different sequence.
+  * srandom(),random() are for sequential program. For parallel srandom_r(), random_r(): are thread safe functions, generates different sequences on different threads. Slightly more complicated to use.
+
+---
+
+* **Moore's law (Number of transistors)**
+
+  * Moore´s law says that the number of transistors in a given area will double every 18th month
+
+---
+
+* **Moore's law (Number of transistors)**
+
+  * Moore´s law says that the number of transistors in a given area will double every 18th month
+
+---
+
+* **Moore's law (Number of transistors)**
+
+  * Moore´s law says that the number of transistors in a given area will double every 18th month
+
+---
+
+
+# **Sorting Algorithms:**
+
+* **Θ(n^2) algorithms:**
+
+  * 1. **Selection sort**
+
+    * Repeatedly selects the smallest (or largest) element from the unsorted portion and swaps it with the first unsorted element.
+    * Simple and easy to understand, useful for small datasets or when memory space is very limited.
+
+  ---
+
+
+  * 2. **Bubble sort**
+
+    * Repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order. This process is repeated until the list is sorted.
+    * Simple but inefficient for large lists. Can detect a sorted list and stop early.
+
+  ---
+
+  * 3. **Insertion sort**
+
+    * Builds the sorted array one element at a time by repeatedly picking the next element and inserting it into its correct position.
+    * Efficient for small datasets or nearly sorted data. Often used in practice for small auxiliary arrays in more complex algorithms like quicksort.
+
+---
+
+* **O(n log n) algorithms:**
+
+  * 1. **Quicksort**
+
+    * Divides the array into two smaller sub-arrays (low and high elements) around a pivot element and then recursively sorts the sub-arrays.
+    * Highly efficient for large datasets and widely used due to its average-case performance and cache efficiency.
+
+  ---
+
+
+  * 2. **Mergesort**
+
+    * Divides the array into two halves, recursively sorts each half, and then merges the two sorted halves.
+    * Preferred for sorting linked lists and when stable sorting is required. Good for large datasets.
+
+  ---
+
+  * 3. **Heapsort**
+
+    * Converts the array into a max-heap and then repeatedly extracts the maximum element from the heap, placing it at the end of the array.
+    * Useful for applications needing guaranteed O(n log n) performance and limited additional space.
+
+---
+
+* **Other sorting algorithms**
+
+  * 1. **Counting sort**
+    * Counts the occurrences of each distinct element and uses this information to place the elements into the correct positions.
+    * Efficient for sorting integers within a small range. Not suitable for large ranges or floating-point numbers.
+  ---
+  * 2. **Radixsort**
+    * Sorts the numbers digit by digit, starting from the least significant digit to the most significant digit, using a stable counting sort as a subroutine.
+    * Useful for sorting large numbers of integers or strings with a fixed length.
+  ---
+  * 3. **Bucketsort**
+    * Distributes elements into a number of buckets, sorts each bucket individually (often using another sorting algorithm like insertion sort), and then concatenates the sorted buckets.
+    * Effective for uniformly distributed data over a range. Commonly used for floating-point numbers in the range [0, 1).
+  ---
 
 ---
 
