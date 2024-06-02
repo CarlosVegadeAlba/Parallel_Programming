@@ -4,7 +4,7 @@
 
 ## First Assigment
 
-#### First We will study the Radix algorithm
+#### First We will study the Radix algorithm (To be updated)
 
 ## Second Assigment
 
