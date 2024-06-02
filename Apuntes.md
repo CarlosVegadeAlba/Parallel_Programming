@@ -26,13 +26,26 @@
 ---
 
 * **How can Schedules affect SpeedUp in pragma omp**
+
   * If the work is not balanced and we choose a static scheduled, the amount of work will be very different between the threads and therefore the speedup will be far away for optimal, as some threads will just be waiting for others to finish
   * If the inner loops can have different number of operations inside, probably the dynamic, guided or auto schedule will fit better
-  * An example: We have 2 loops, The outmost one goes from i=0 to i<N and the inner one goes from j=i+1 to j<N. As we can see the first values of i will computate more operations than the last ones, therefore the work is unbalanced. This will also apply if for example we are doing some operations inside the outmost loop that can take different running time, making some threads finish earlier than other. The expected speedup for using 2 threads for the different approaches would be:
-    * Static: 1.5 - 1.7
+  * An example: We have 2 loops, The outmost one goes from i=0 to i<N and the inner one goes from j=0 to j<i. As we can see the last values of i will computate more operations than the first ones, therefore the work is unbalanced. This will also apply if for example we are doing some operations inside the outmost loop that can take different running time, making some threads finish earlier than other.
+    For the given problem of having the i-loop going from i=0 to N, and j-loop going from j=0 to i, the expected speedup for using 2 threads for the different approaches would be:
+    Aproximate total work: N²/2
+    * Static:
+
+      * First thread
+
+        ![1717363210598](image/Apuntes/1717363210598.png)
+      * Second thread would do:
+
+        ![1717363891356](image/Apuntes/1717363891356.png)
+      * Therefore the total speedup would be given my this second thread: (N²/2) / (3N²/8) = 4/3 = 1.33
     * Dynamic: 1.8 - 1.9
     * Guided: 1.7 - 1.9
     * Auto: 1.8 - 2
+
+  ![1717362929727](image/Apuntes/1717362929727.png)
 
 ---
 
@@ -60,25 +73,6 @@
   * srandom(),random() are for sequential program. For parallel srandom_r(), random_r(): are thread safe functions, generates different sequences on different threads. Slightly more complicated to use.
 
 ---
-
-* **Moore's law (Number of transistors)**
-
-  * Moore´s law says that the number of transistors in a given area will double every 18th month
-
----
-
-* **Moore's law (Number of transistors)**
-
-  * Moore´s law says that the number of transistors in a given area will double every 18th month
-
----
-
-* **Moore's law (Number of transistors)**
-
-  * Moore´s law says that the number of transistors in a given area will double every 18th month
-
----
-
 
 # **Sorting Algorithms:**
 
@@ -133,16 +127,25 @@
 * **Other sorting algorithms**
 
   * 1. **Counting sort**
+
     * Counts the occurrences of each distinct element and uses this information to place the elements into the correct positions.
     * Efficient for sorting integers within a small range. Not suitable for large ranges or floating-point numbers.
+
   ---
+
+
   * 2. **Radixsort**
+
     * Sorts the numbers digit by digit, starting from the least significant digit to the most significant digit, using a stable counting sort as a subroutine.
     * Useful for sorting large numbers of integers or strings with a fixed length.
+
   ---
+
   * 3. **Bucketsort**
+
     * Distributes elements into a number of buckets, sorts each bucket individually (often using another sorting algorithm like insertion sort), and then concatenates the sorted buckets.
     * Effective for uniformly distributed data over a range. Commonly used for floating-point numbers in the range [0, 1).
+
   ---
 
 ---
@@ -782,6 +785,12 @@ mpicc -Wall -O3 -o prueba1 prueba1.c
 ### Execute
 
 mpicc -o programa programa.c
+
+---
+
+# CUDA GPU
+
+---
 
 # Terminology
 
