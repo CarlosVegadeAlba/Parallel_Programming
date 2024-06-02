@@ -1,5 +1,5 @@
 # Lista de archivos fuente
-SOURCES = prueba1.c prueba2.c matrixMulMPI.c matrixDiv.c
+SOURCES = prueba1.c prueba2.c prueba3.c matrixMulMPI.c matrixDiv.c
 
 # Derivar nombres de ejecutables a partir de los nombres de los archivos fuente
 EXECS = $(SOURCES:.c=)
@@ -8,7 +8,7 @@ EXECS = $(SOURCES:.c=)
 CC = mpicc
 
 # Opciones del compilador
-CFLAGS = -Wall -O2
+CFLAGS = -Wall -O3
 
 # Regla por defecto
 all: $(EXECS)

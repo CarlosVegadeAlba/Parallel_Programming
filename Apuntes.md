@@ -1,10 +1,9 @@
-# Important Terms
+# 1. Important Terms
 
 * **Temporal locality and Spatial locality:**
   * Temporal locality: refers to the tendency of programs to reuse data elements that have recently been used. Thus recently used data elements are stored high up in the cache hierarchy.
   * Spatial locality: refers to the tendency of programs to use data elements that are stored close in memory to recently used elements. Thus the system loads not only an element that is to be used, but also elements that are stored close by (i.e. in the same cache line) and stores these high up in the cache hierarchy.
-  * how one can exploit both of these concepts when writing sequential code for matrix multiplication?: In standard matrix multiplication, AxB, spatial locality is exploited by loading cache lines of A and B into cache. Unless B has been transposed this only helps the access to A. Temporal locality only has an effect if A (or the transposed B) is suf ciently small that an entire row can be stored in
-    memory.
+  * How one can exploit both of these concepts when writing sequential code for matrix multiplication?: In standard matrix multiplication, AxB, spatial locality is exploited by loading cache lines of A and B into cache. Unless B has been transposed this only helps the access to A. Temporal locality only has an effect if A (or the transposed B) is sufciently small that an entire row can be stored in memory.
     To exploit both types of locality multiplication should be done by dividing A and B into smaller blocks. If the elements of each block is stored consecutively then two blocks of suf ciently small size n2 can be stored in the cache hierarchy and be used to perform n3 operations.
 
 ---
@@ -21,15 +20,15 @@
 ---
 
 * **Latency and bandwidth in parallel computers with distributed memory**
-  * Latency: When sending data from between two processes latency is the time from when the rst data item is sent until it starts arriving at its destination
+  * Latency: When sending data from between two processes latency is the time from when the first data item is sent until it starts arriving at its destination
   * Bandwidth: is the capacity of the communication channel used. This measures how much data (in bytes) can be sent per time unit once the communication channel is stablished
 
 ---
 
 * **How can Schedules affect SpeedUp in pragma omp**
-  * If the work is not balanced and we choose a static scheduled, the work will not be balanced between the threads and therefore the speedup will be far away for optimal
+  * If the work is not balanced and we choose a static scheduled, the amount of work will be very different between the threads and therefore the speedup will be far away for optimal, as some threads will just be waiting for others to finish
   * If the inner loops can have different number of operations inside, probably the dynamic, guided or auto schedule will fit better
-  * An example: We have 2 loops, The outmost one goes from i=0 to i<N and the inner one goes from j=i+1 to j<N. As we can see the first values of i will computate more operations than the last ones, therefore the work in unbalanced. This will also apply if for example we are doing some operations inside the outmost loop that can take different running time, making some threads finish earlier than other. The expected speedup for using 2 threads for the different approaches would be:
+  * An example: We have 2 loops, The outmost one goes from i=0 to i<N and the inner one goes from j=i+1 to j<N. As we can see the first values of i will computate more operations than the last ones, therefore the work is unbalanced. This will also apply if for example we are doing some operations inside the outmost loop that can take different running time, making some threads finish earlier than other. The expected speedup for using 2 threads for the different approaches would be:
     * Static: 1.5 - 1.7
     * Dynamic: 1.8 - 1.9
     * Guided: 1.7 - 1.9
@@ -38,22 +37,27 @@
 ---
 
 * **In practice it is possible to get higher speedup than p when using p processes?**
-  * Yes, this can happen because we now get access to more memory and the sequential parts can
-    execute faster.
+  * Yes, this can happen because we now get access to more memory and the sequential parts can execute faster.
 
 ---
 
 * **How different languages stored rows/columns when loading a value**
 
-  * C stores them in rows
-  * Fortram and Matlab loads columns**Moore's law (Number of transistors)**
-* * Moore´s law says that the number of transistors in a given area will double every 18th month
+  * C, Java stores them in rows
+  * Fortram and Matlab loads columns
+
+  ---
+* **Moore's law (Number of transistors)**
+
+  * Moore´s law says that the number of transistors in a given area will double every 18th month
 
 ---
 
+# 2. OpenMP Reductions
 
-
-# OpenMP Reductions
+* Each thread gets its private copy of the `General` variable.
+* Threads compute their partial operations independently.
+* At the end of the parallel region, OpenMP combines these private variable using the specified operation and stores the result in the shared `General` variable.
 
 ## Types of Reductions in OpenMP
 
@@ -116,59 +120,67 @@ To find the maximum value in an array using a custom reduction in OpenMP, you ca
 **Code**:
 
 ```c
-#include <omp.h>
 #include <stdio.h>
-#include <limits.h>
+#include <limits.h> // For INT_MAX
+#include <omp.h>
 
-#pragma omp declare reduction(maximum : int : omp_out = omp_in > omp_out ? omp_in : omp_out) initializer(omp_priv = INT_MIN)
+#define N 1000000
+int data[N];
 
-int main() {
-    int n = 1000;
-    int max_val = INT_MIN;
-    int array[n];
+// Function to find the minimum element in the array
+int find_min() {
+    int i;
+    int min_val = INT_MAX;
 
-    // Initialize the array with some values
-    for (int i = 0; i < n; i++) {
-        array[i] = i + 1;
+    // Initialize array with some values (for example purposes, we use values from N to 1)
+    for (i = 0; i < N; i++) {
+        data[i] = N - i;
     }
 
-    // Parallel region with custom maximum reduction
-    #pragma omp parallel for reduction(maximum:max_val)
-    for (int i = 0; i < n; i++) {
-        if (array[i] > max_val) {
-            max_val = array[i];
+    // Declare the user-defined reduction operation for finding the minimum
+    #pragma omp declare reduction(minimum : int : omp_out = omp_in < omp_out ? omp_in : omp_out) initializer(omp_priv = INT_MAX)
+
+    // Parallel loop with minimum reduction
+    #pragma omp parallel for reduction(minimum:min_val)
+    for (i = 0; i < N; i++) {
+        if (data[i] < min_val) {
+            min_val = data[i];
         }
     }
 
-    printf("Max value: %d\n", max_val);
+    return min_val;
+}
+
+int main() {
+    int min_element = find_min();
+    printf("Minimum element: %d\n", min_element);
     return 0;
 }
+
 ```
 
 ## Explanation
 
-1. **Declare Reduction**:
+1. **User-Defined Reduction** :
 
-   - `#pragma omp declare reduction(maximum : int : omp_out = omp_in > omp_out ? omp_in : omp_out) initializer(omp_priv = INT_MIN)`:
-     - **maximum**: The name of the custom reduction operation.
-     - **int**: The data type the reduction operation applies to.
-     - **omp_out = omp_in > omp_out ? omp_in : omp_out**: The reduction operation that compares and assigns the maximum value.
-     - **initializer(omp_priv = INT_MIN)**: Initializes the private reduction variable to `INT_MIN`.
-2. **Parallel Region**:
+* The `#pragma omp declare reduction(minimum : int : omp_out = omp_in < omp_out ? omp_in : omp_out) initializer(omp_priv = INT_MAX)` directive declares a user-defined reduction operation named `minimum` for type `int`.
+  * `omp_out` is the variable that holds the combined result.
+  * `omp_in` is the variable that holds the partial result from each thread.
+  * The combiner `omp_out = omp_in < omp_out ? omp_in : omp_out` ensures that `omp_out` will always hold the minimum value.
+  * The initializer clause `initializer(omp_priv = INT_MAX)` initializes the private copies of the reduction variable to `INT_MAX`.
 
-   - `#pragma omp parallel for reduction(maximum:max_val)`:
-     - `reduction(maximum:max_val)`: Specifies the custom reduction operation to be applied to `max_val`.
-3. **Reduction Operation**:
+2. **Parallel Loop** :
 
-   - Inside the parallel for loop, each thread updates its local copy of `max_val` with the maximum value found in its assigned iterations.
-   - After the parallel region, the custom reduction operation combines the local maximum values from each thread into the global `max_val`.
+* The `#pragma omp parallel for reduction(minimum:min_val)` directive tells the compiler to parallelize the loop and perform a minimum reduction on the `min_val` variable.
+  * Each thread gets its private copy of `min_val` initialized to `INT_MAX`.
+  * Threads independently compare their elements of the array to find the local minimum.
+  * At the end of the parallel region, OpenMP combines these local minima using the `minimum` operation and stores the result in the shared `min_val` variable.
 
 ## Summary
 
 OpenMP supports various reduction operations, including arithmetic, logical, and bitwise reductions. For more complex reductions like finding the maximum or minimum value, custom reductions can be implemented using the `declare reduction` directive. This allows for flexibility and extensibility in performing reductions across multiple threads.
 
-
-# OpenMP Schedules
+# 3. OpenMP Schedules
 
 ### **Static Schedule**
 
@@ -320,12 +332,13 @@ for (int i = 0; i < 16; i++) {
 }
 ```
 
+---
 
-# MPI Functions
+# 4. MPI Functions
 
-### **1. MPI_Init**
+### **1. MPI_Init and MPI_Finalize**
 
-**Purpose**: Initializes the MPI execution environment. This function must be called before any other MPI functions.
+**Purpose**: Initializes and terminates the MPI execution environment. The Init function must be called before any other MPI functions and the Finalize before exiting the problem, and no more MPI calls can be done after that.
 
 **Arguments**:
 
@@ -348,29 +361,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **2. MPI_Finalize**
-
-**Purpose**: Terminates the MPI execution environment. No MPI functions can be called after this function.
-
-**Arguments**: None.
-
-**Example**:
-
-```c
-#include <mpi.h>
-#include <stdio.h>
-
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    // Other MPI code here
-    MPI_Finalize();
-    return 0;
-}
-```
-
----
-
-### **3. MPI_Comm_rank**
+### **2. MPI_Comm_rank**
 
 **Purpose**: Determines the rank (ID) of the calling process within the communicator.
 
@@ -397,7 +388,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **4. MPI_Comm_size**
+### **3. MPI_Comm_size**
 
 **Purpose**: Determines the number of processes in the communicator.
 
@@ -424,7 +415,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **5. MPI_Send**
+### **4. MPI_Send**
 
 **Purpose**: Sends a message to a specified process.
 
@@ -460,7 +451,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **6. MPI_Recv**
+### **5. MPI_Recv**
 
 **Purpose**: Receives a message from a specified process.
 
@@ -499,7 +490,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **7. MPI_Reduce**
+### **6. MPI_Reduce**
 
 **Purpose**: Reduces values on all processes to a single value on the root process.
 
@@ -540,7 +531,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **8. MPI_Bcast**
+### **7. MPI_Bcast**
 
 **Purpose**: Broadcasts a message from the root process to all other processes in the communicator.
 
@@ -577,7 +568,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **9. MPI_Scatter**
+### **8. MPI_Scatter**
 
 **Purpose**: Distributes distinct chunks of data from the root process to all other processes in the communicator.
 
@@ -616,7 +607,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **10. MPI_Gather**
+### **9. MPI_Gather**
 
 **Purpose**: Gathers distinct chunks of data from all processes to the root process.
 
@@ -662,7 +653,7 @@ int main(int argc, char **argv) {
 
 ---
 
-### **11. MPI_Barrier**
+### **10. MPI_Barrier**
 
 **Purpose**: Blocks until all processes in the communicator have reached this routine.
 
@@ -692,8 +683,29 @@ int main(int argc, char **argv) {
 
 ### Compile
 
-mpicc -Wall -O2 -o prueba1 prueba1.c
+mpicc -Wall -O3 -o prueba1 prueba1.c
 
 ### Execute
 
 mpicc -o programa programa.c
+
+# Terminology
+
+1. **Socket**: Where a (multicore) processor can be plugged in
+2. **Multicore processor:**
+
+   - A processor that can run several processes (i.e. threads) at the same time(one or two per core)
+   - Each process has access to the same shared memory
+   - Can have individual caches
+3. **Thread:**
+
+   - Light weight process: One processor can run multiple threads
+4. **Hyper-threading:**
+
+   - One processor (i.e. core) rapidly switching between multiple threads
+5. **Scalability**
+
+   - How does the program performance improve with increasing numbers of processes?
+6. a
+
+   - a
